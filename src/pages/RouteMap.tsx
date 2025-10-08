@@ -292,7 +292,7 @@ export default function POSPurchases(): JSX.Element {
       {/* Header + filters */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">POS- Purchases / Transactions</h1>
+          <h1 className="text-xl font-bold text-slate-900">POS- Purchases</h1>
         </div>
         <div className="flex gap-2 w-full md:w-auto items-center">
           <div className="flex items-center gap-2">

@@ -12,8 +12,9 @@ import {
   Check,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import api from "@/api/axios";
 
-const API_BASE = "http://192.168.29.102:5000/api";
+const API_BASE = api;
 
 type Expense = {
   id: string;
@@ -83,7 +84,7 @@ export default function ExpenseSummary(): JSX.Element {
         limit: String(perPage * 10),
       });
 
-      const res = await fetch(`${API_BASE}/expenses?${params.toString()}`);
+      const res = await fetch(`${api}/expenses?${params.toString()}`);
       if (!res.ok) {
         const txt = await res.text().catch(() => res.statusText || "Failed");
         console.warn("Expenses API failed:", res.status, txt);
@@ -204,7 +205,7 @@ export default function ExpenseSummary(): JSX.Element {
     setSaving(true);
     try {
       if (editing) {
-        const res = await fetch(`${API_BASE}/expenses/${editing.id}`, {
+        const res = await fetch(`${api}/expenses/${editing.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(buildPayload(form)),
@@ -216,7 +217,7 @@ export default function ExpenseSummary(): JSX.Element {
         setRows((prev) => prev.map((r) => (r.id === editing.id ? { ...r, ...(form as Expense) } : r)));
         toast.success("Expense updated");
       } else {
-        const res = await fetch(`${API_BASE}/expenses`, {
+        const res = await fetch(`${api}/expenses`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(buildPayload(form)),
@@ -256,7 +257,7 @@ export default function ExpenseSummary(): JSX.Element {
   const deleteRow = async (id: string) => {
     if (!confirm("Delete this expense?")) return;
     try {
-      const res = await fetch(`${API_BASE}/expenses/${id}`, { method: "DELETE" });
+      const res = await fetch(`${api}/expenses/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const txt = await res.text().catch(() => res.statusText);
         throw new Error(txt || `Delete failed (${res.status})`);
@@ -277,7 +278,7 @@ export default function ExpenseSummary(): JSX.Element {
     }
     if (!confirm(`Verify ${ids.length} selected items?`)) return;
     try {
-      const res = await fetch(`${API_BASE}/expenses/bulk-verify`, {
+      const res = await fetch(`${api}/expenses/bulk-verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids }),

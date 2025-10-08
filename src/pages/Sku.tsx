@@ -1,6 +1,5 @@
 
-
-// import React, { useEffect, useState } from "react";
+// import React, { useEffect, useRef, useState } from "react";
 // import { Plus, Edit3, Trash2, X, RefreshCw } from "lucide-react";
 // import toast, { Toaster } from "react-hot-toast";
 // import api from "@/api/axios";
@@ -17,9 +16,6 @@
 //   updated_at?: string | null;
 // };
 
-// /**
-//  * Form shape
-//  */
 // type FormState = {
 //   product_id: string;
 //   quantity: string; // keep as string for input and convert when sending
@@ -58,37 +54,103 @@
 //   }
 // }
 
-// /**
-//  * Try to extract field-level validation errors from the server response.
-//  */
-// function extractFieldErrors(responseData: any): Record<string, string> | null {
-//   if (!responseData) return null;
-//   if (responseData.errors && typeof responseData.errors === "object") {
-//     const out: Record<string, string> = {};
-//     for (const k of Object.keys(responseData.errors)) {
-//       const v = responseData.errors[k];
-//       out[k] = Array.isArray(v) ? String(v[0]) : String(v);
-//     }
-//     return out;
+// /** Heuristic mapping from server field key to our form field name */
+// function mapServerFieldToFormField(key: string): string | null {
+//   if (!key) return null;
+//   const k = key.toLowerCase();
+//   if (k.includes("product")) return "product_id";
+//   if (k.includes("qty") || k.includes("quantity")) return "quantity";
+//   if (k.includes("type")) return "type";
+//   if (k.includes("vendor")) return "vendor_id";
+//   if (k.includes("note")) return "note";
+//   // fallback if exact matches like product_id
+//   const simple = ["product_id", "quantity", "type", "vendor_id", "note"];
+//   if (simple.includes(k)) return k;
+//   return null;
+// }
+
+// /** Extracts field-level errors and general messages from many shapes */
+// function extractServerErrors(payload: any): { fieldErrors: Record<string, string>; general: string[] } {
+//   const fieldErrors: Record<string, string> = {};
+//   const general: string[] = [];
+//   if (!payload) return { fieldErrors, general };
+
+//   const pushGeneral = (m: any) => {
+//     if (m == null) return;
+//     if (Array.isArray(m)) m.forEach((x) => pushGeneral(x));
+//     else general.push(String(m));
+//   };
+
+//   // top-level message(s)
+//   if (payload.message) {
+//     pushGeneral(payload.message);
 //   }
-//   if (responseData.validation && typeof responseData.validation === "object") {
-//     const out: Record<string, string> = {};
-//     for (const k of Object.keys(responseData.validation)) {
-//       const v = responseData.validation[k];
-//       out[k] = Array.isArray(v) ? String(v[0]) : String(v);
-//     }
-//     return out;
+//   if (Array.isArray(payload.messages)) pushGeneral(payload.messages);
+
+//   // typical 'errors' object: { errors: { field: [msg, ...] } }
+//   if (payload.errors && typeof payload.errors === "object") {
+//     Object.keys(payload.errors).forEach((k) => {
+//       const v = payload.errors[k];
+//       const mapped = mapServerFieldToFormField(k) ?? k;
+//       if (Array.isArray(v)) fieldErrors[mapped] = String(v.join(", "));
+//       else if (typeof v === "object") {
+//         // sometimes nested arrays/objects — stringify first meaningful
+//         try {
+//           const arr = Array.isArray(v) ? v : Object.values(v);
+//           if (arr.length) fieldErrors[mapped] = String(arr[0]);
+//           else fieldErrors[mapped] = String(JSON.stringify(v));
+//         } catch {
+//           fieldErrors[mapped] = String(v);
+//         }
+//       } else fieldErrors[mapped] = String(v);
+//     });
 //   }
-//   const possible = ["product_id", "quantity", "type", "vendor_id", "note"];
-//   const out: Record<string, string> = {};
-//   let found = false;
+
+//   // nested data.errors or data.validation
+//   const maybe = payload.data ?? payload.error ?? null;
+//   if (maybe && typeof maybe === "object") {
+//     if (maybe.errors && typeof maybe.errors === "object") {
+//       Object.keys(maybe.errors).forEach((k) => {
+//         const v = maybe.errors[k];
+//         const mapped = mapServerFieldToFormField(k) ?? k;
+//         if (Array.isArray(v)) fieldErrors[mapped] = String(v.join(", "));
+//         else fieldErrors[mapped] = String(v);
+//       });
+//     }
+//     if (maybe.validation && typeof maybe.validation === "object") {
+//       Object.keys(maybe.validation).forEach((k) => {
+//         const v = maybe.validation[k];
+//         const mapped = mapServerFieldToFormField(k) ?? k;
+//         if (Array.isArray(v)) fieldErrors[mapped] = String(v.join(", "));
+//         else fieldErrors[mapped] = String(v);
+//       });
+//     }
+//     if (maybe.message) pushGeneral(maybe.message);
+//     if (Array.isArray(maybe.messages)) pushGeneral(maybe.messages);
+//   }
+
+//   // sometimes server returns plain field messages like { quantity: "must be numeric" }
+//   const possible = ["product_id", "product", "quantity", "qty", "type", "vendor", "vendor_id", "note"];
 //   for (const f of possible) {
-//     if (responseData[f]) {
-//       out[f] = String(responseData[f]);
-//       found = true;
+//     if (payload[f]) {
+//       const mapped = mapServerFieldToFormField(f) ?? f;
+//       if (!fieldErrors[mapped]) {
+//         if (Array.isArray(payload[f])) fieldErrors[mapped] = String(payload[f].join(", "));
+//         else fieldErrors[mapped] = String(payload[f]);
+//       }
 //     }
 //   }
-//   return found ? out : null;
+
+//   // status:false fallback
+//   if (payload.status === false && general.length === 0 && Object.keys(fieldErrors).length === 0) {
+//     if (payload.error) pushGeneral(payload.error);
+//     else if (payload.message) pushGeneral(payload.message);
+//     else pushGeneral("Request failed");
+//   }
+
+//   // dedupe & trim
+//   const dedupGen = Array.from(new Set(general.map((s) => String(s).trim()).filter(Boolean)));
+//   return { fieldErrors, general: dedupGen };
 // }
 
 // /* -------------------------
@@ -103,29 +165,40 @@
 //   const [editing, setEditing] = useState<Inventory | null>(null);
 //   const [form, setForm] = useState<FormState>(defaultForm);
 //   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+//   const [generalErrors, setGeneralErrors] = useState<string[]>([]);
 //   const [saving, setSaving] = useState(false);
 
 //   const [deleteTarget, setDeleteTarget] = useState<Inventory | null>(null);
 //   const [deleteLoading, setDeleteLoading] = useState(false);
 
-//   // products from API (for dropdown)
+//   // products & vendors for dropdown + name lookup
 //   const [products, setProducts] = useState<any[]>([]);
 //   const [productsLoading, setProductsLoading] = useState(false);
-
-//   // vendors from API (for vendor dropdown)
 //   const [vendors, setVendors] = useState<any[]>([]);
 //   const [vendorsLoading, setVendorsLoading] = useState(false);
 
-//   // Product & Vendor endpoints (local network)
-//   const PRODUCTS_URL = "http://192.168.1.6:8000/api/admin/products/show";
-//   const VENDORS_URL = "http://192.168.1.6:8000/api/admin/settings/vendors/show";
+//   // refs for focusing
+//   const productRef = useRef<HTMLSelectElement | null>(null);
+//   const quantityRef = useRef<HTMLInputElement | null>(null);
+//   const typeRef = useRef<HTMLSelectElement | null>(null);
+//   const vendorRef = useRef<HTMLSelectElement | null>(null);
+//   const noteRef = useRef<HTMLTextAreaElement | null>(null);
+//   const FIELD_ORDER = ["product_id", "quantity", "type", "vendor_id", "note"];
 
-//   // Fetch products used in dropdown
+//   // --- PRODUCT & VENDOR ENDPOINTS --- //
 //   async function fetchProductsList() {
 //     setProductsLoading(true);
 //     try {
-//       const res = await api.get(PRODUCTS_URL);
+//       const res = await api.get("/admin/products/show");
 //       const body = res.data;
+//       // If server says status:false, surface messages
+//       if (body && body.status === false) {
+//         const { general } = extractServerErrors(body);
+//         if (general.length) general.forEach((m) => toast.error(m));
+//         else toast.error(body.message ?? "Failed to load products");
+//         setProducts([]);
+//         return;
+//       }
 //       const rows: any[] = Array.isArray(body)
 //         ? body
 //         : Array.isArray(body?.data)
@@ -147,12 +220,18 @@
 //     }
 //   }
 
-//   // Fetch vendors for vendor dropdown
 //   async function fetchVendorsList() {
 //     setVendorsLoading(true);
 //     try {
-//       const res = await api.get(VENDORS_URL);
+//       const res = await api.get("/admin/settings/vendors/show");
 //       const body = res.data;
+//       if (body && body.status === false) {
+//         const { general } = extractServerErrors(body);
+//         if (general.length) general.forEach((m) => toast.error(m));
+//         else toast.error(body.message ?? "Failed to load vendors");
+//         setVendors([]);
+//         return;
+//       }
 //       const rows: any[] = Array.isArray(body)
 //         ? body
 //         : Array.isArray(body?.data)
@@ -174,33 +253,68 @@
 //     }
 //   }
 
-//   // productOptions normalized
+//   // normalized options used in dropdowns
 //   const productOptions = products
 //     .map((p) => {
 //       const id = p?.id ?? p?._id ?? p?.product_id ?? p?.productId ?? "";
 //       const name = p?.name ?? p?.title ?? "";
 //       if (id === null || id === undefined || id === "") return null;
-//       return { id: String(id), label: name ? `${id} — ${name}` : String(id) };
+//       return { id: String(id), label: name ? `${id} — ${name}` : String(id), raw: p };
 //     })
-//     .filter(Boolean) as { id: string; label: string }[];
+//     .filter(Boolean) as { id: string; label: string; raw: any }[];
 
-//   // vendorOptions normalized
 //   const vendorOptions = vendors
 //     .map((v) => {
 //       const id = v?.id ?? v?._id ?? v?.vendor_id ?? v?.vendorId ?? "";
 //       const name = v?.name ?? v?.title ?? v?.company ?? "";
 //       if (id === null || id === undefined || id === "") return null;
-//       return { id: String(id), label: name ? `${id} — ${name}` : String(id) };
+//       return { id: String(id), label: name ? `${id} — ${name}` : String(id), raw: v };
 //     })
-//     .filter(Boolean) as { id: string; label: string }[];
+//     .filter(Boolean) as { id: string; label: string; raw: any }[];
 
-//   // --- Inventory API helpers ---
+//   function getProductName(productId: string | number | undefined | null) {
+//     if (productId === null || productId === undefined || productId === "") return "-";
+//     const pid = String(productId);
+//     const found = productOptions.find((p) => p.id === pid);
+//     if (found) return found.raw?.name ?? found.raw?.title ?? String(pid);
+//     const fallback = products.find((p) => String(p?.id ?? p?._id ?? p?.product_id ?? p?.productId) === pid);
+//     if (fallback) return fallback?.name ?? fallback?.title ?? pid;
+//     return String(pid);
+//   }
+
+//   function getVendorName(vendorId: string | number | undefined | null) {
+//     if (vendorId === null || vendorId === undefined || vendorId === "") return "-";
+//     const vid = String(vendorId);
+//     const found = vendorOptions.find((v) => v.id === vid);
+//     if (found) return found.raw?.name ?? found.raw?.title ?? found.raw?.company ?? String(vid);
+//     const fallback = vendors.find((v) => String(v?.id ?? v?._id ?? v?.vendor_id ?? v?.vendorId) === vid);
+//     if (fallback) return fallback?.name ?? fallback?.title ?? fallback?.company ?? vid;
+//     return String(vid);
+//   }
+
+//   // --- Inventory API helpers --- //
 //   async function fetchItems() {
 //     setLoading(true);
 //     try {
 //       const res = await api.get("/admin/settings/stock-inventory/show");
 //       const body = res.data;
-//       const rows: any[] = Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : body?.inventory ?? body?.items ?? [];
+//       // if server returns status:false treat as failure and show messages
+//       if (body && body.status === false) {
+//         const { general } = extractServerErrors(body);
+//         if (general.length) general.forEach((m) => toast.error(m));
+//         else toast.error(body.message ?? "Failed to load inventory");
+//         setItems([]);
+//         return;
+//       }
+//       const rows: any[] = Array.isArray(body)
+//         ? body
+//         : Array.isArray(body?.data)
+//         ? body.data
+//         : Array.isArray(body?.inventory)
+//         ? body.inventory
+//         : Array.isArray(body?.items)
+//         ? body.items
+//         : [];
 //       setItems(rows.map((r: any) => normalizeInventory(r)));
 //     } catch (err: unknown) {
 //       const { message, status } = formatAxiosError(err);
@@ -226,7 +340,6 @@
 //     };
 //   }
 
-//   // mount: fetch both lists
 //   useEffect(() => {
 //     void fetchProductsList();
 //     void fetchVendorsList();
@@ -234,16 +347,17 @@
 //     // eslint-disable-next-line react-hooks/exhaustive-deps
 //   }, []);
 
-//   // open add modal
 //   function openAdd() {
 //     setEditing(null);
 //     setForm(defaultForm);
 //     setFormErrors({});
+//     setGeneralErrors([]);
 //     setModalOpen(true);
 //     if (!products.length) void fetchProductsList();
 //     if (!vendors.length) void fetchVendorsList();
+//     setTimeout(() => productRef.current?.focus(), 80);
 //   }
-//   // open edit
+
 //   function openEdit(it: Inventory) {
 //     setEditing(it);
 //     setForm({
@@ -254,10 +368,11 @@
 //       note: String(it.note ?? ""),
 //     });
 //     setFormErrors({});
+//     setGeneralErrors([]);
 //     setModalOpen(true);
+//     setTimeout(() => productRef.current?.focus(), 80);
 //   }
 
-//   // validation
 //   function validateForm(): boolean {
 //     const e: Record<string, string> = {};
 //     if (!form.product_id.trim()) e.product_id = "Product is required";
@@ -268,14 +383,31 @@
 //     return Object.keys(e).length === 0;
 //   }
 
-//   // create or update
+//   function focusFirstInvalidField(fieldErrs: Record<string, string>) {
+//     for (const f of FIELD_ORDER) {
+//       if (fieldErrs[f]) {
+//         if (f === "product_id") productRef.current?.focus();
+//         else if (f === "quantity") quantityRef.current?.focus();
+//         else if (f === "type") typeRef.current?.focus();
+//         else if (f === "vendor_id") vendorRef.current?.focus();
+//         else if (f === "note") noteRef.current?.focus();
+//         break;
+//       }
+//     }
+//   }
+
 //   async function saveItem(e?: React.FormEvent) {
 //     e?.preventDefault();
+//     setFormErrors({});
+//     setGeneralErrors([]);
+
 //     if (!validateForm()) {
 //       toast.error("Fix validation errors");
+//       focusFirstInvalidField(formErrors);
 //       return;
 //     }
 //     setSaving(true);
+
 //     try {
 //       const payload = {
 //         product_id: form.product_id,
@@ -287,14 +419,35 @@
 
 //       if (editing) {
 //         const updatedCandidate: Inventory = { ...editing, ...payload, quantity: Number(payload.quantity) };
+//         // optimistic local update
 //         setItems((p) => p.map((it) => (String(it.id) === String(editing.id) ? updatedCandidate : it)));
 //         setModalOpen(false);
+
 //         const res = await api.post(`/admin/settings/stock-inventory/update/${editing.id}`, payload);
-//         const raw = res.data?.data ?? res.data?.inventory ?? res.data ?? null;
+//         const body = res.data ?? res;
+//         if (body && body.status === false) {
+//           const { fieldErrors, general } = extractServerErrors(body);
+//           if (Object.keys(fieldErrors).length) {
+//             setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
+//             focusFirstInvalidField(fieldErrors);
+//             toast.error("Validation errors received from server");
+//           }
+//           if (general.length) {
+//             setGeneralErrors(general);
+//             general.forEach((m) => toast.error(m));
+//           }
+//           // rollback by re-fetching
+//           await fetchItems();
+//           setSaving(false);
+//           return;
+//         }
+
+//         const raw = body?.data ?? body?.inventory ?? body ?? null;
 //         const updated = raw ? normalizeInventory(raw) : updatedCandidate;
 //         setItems((p) => p.map((it) => (String(it.id) === String(editing.id) ? updated : it)));
 //         toast.success("Inventory updated");
 //       } else {
+//         // optimistic create
 //         const tmpId = `tmp-${Date.now()}`;
 //         const optimistic: Inventory = {
 //           id: tmpId,
@@ -308,8 +461,26 @@
 //         setModalOpen(false);
 
 //         const res = await api.post("/admin/settings/stock-inventory/add", payload);
-//         const raw = res.data?.data ?? res.data?.inventory ?? res.data ?? null;
-//         const created = raw ? normalizeInventory(raw) : { ...optimistic, id: res.data?.id ?? tmpId };
+//         const body = res.data ?? res;
+//         if (body && body.status === false) {
+//           const { fieldErrors, general } = extractServerErrors(body);
+//           if (Object.keys(fieldErrors).length) {
+//             setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
+//             focusFirstInvalidField(fieldErrors);
+//             toast.error("Validation errors received from server");
+//           }
+//           if (general.length) {
+//             setGeneralErrors(general);
+//             general.forEach((m) => toast.error(m));
+//           }
+//           // rollback by refetch
+//           await fetchItems();
+//           setSaving(false);
+//           return;
+//         }
+
+//         const raw = body?.data ?? body?.inventory ?? body ?? null;
+//         const created = raw ? normalizeInventory(raw) : { ...optimistic, id: body?.id ?? tmpId };
 //         setItems((p) => [created, ...p.filter((x) => x.id !== tmpId)]);
 //         toast.success("Inventory added");
 //       }
@@ -317,20 +488,29 @@
 //       setEditing(null);
 //       setForm(defaultForm);
 //       setFormErrors({});
+//       setGeneralErrors([]);
 //     } catch (err: unknown) {
 //       const { message, details, status } = formatAxiosError(err);
 //       console.error("Save inventory error:", { message, status, details, raw: err });
 
 //       const ae = err as AxiosError & { response?: any };
-//       const fieldErrs = extractFieldErrors(ae?.response?.data ?? null);
-//       if (fieldErrs) {
-//         setFormErrors((prev) => ({ ...prev, ...fieldErrs }));
-//         toast.error("Validation error — check fields");
+//       const payload = ae?.response?.data ?? null;
+//       if (payload) {
+//         const { fieldErrors, general } = extractServerErrors(payload);
+//         if (Object.keys(fieldErrors).length) {
+//           setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
+//           focusFirstInvalidField(fieldErrors);
+//           toast.error("Validation error — check fields");
+//         }
+//         if (general.length) {
+//           setGeneralErrors(general);
+//           general.forEach((g) => toast.error(g));
+//         }
 //       } else {
 //         toast.error(message ?? "Failed to save inventory");
 //       }
 
-//       // re-fetch to rollback optimistic changes if any
+//       // rollback optimistic items by re-fetching
 //       await fetchItems();
 //     } finally {
 //       setSaving(false);
@@ -348,11 +528,20 @@
 //     const prev = items;
 //     setItems((p) => p.filter((x) => String(x.id) !== String(id)));
 //     try {
-//       await api.delete(`/admin/settings/stock-inventory/delete/${id}`);
-//       toast.success("Inventory deleted");
+//       const res = await api.delete(`/admin/settings/stock-inventory/delete/${id}`);
+//       const body = res.data ?? res;
+//       if (body && body.status === false) {
+//         const { general } = extractServerErrors(body);
+//         if (general.length) general.forEach((g) => toast.error(g));
+//         else toast.error(body.message ?? "Delete failed");
+//         // rollback
+//         setItems(prev);
+//       } else {
+//         toast.success("Inventory deleted");
+//       }
 //     } catch (err: unknown) {
-//       const { message, details, status } = formatAxiosError(err);
-//       console.error("Delete inventory error:", { message, status, details, raw: err });
+//       const { message } = formatAxiosError(err);
+//       console.error("Delete inventory error:", { message, raw: err });
 //       toast.error(message ?? "Failed to delete");
 //       setItems(prev);
 //     } finally {
@@ -369,13 +558,12 @@
 //       await fetchVendorsList();
 //       toast.success("Inventory, products & vendors refreshed");
 //     } catch {
-//       // handled in inner functions
+//       // inner functions already show toasts
 //     } finally {
 //       setRefreshing(false);
 //     }
 //   }
 
-//   // small controlled input helper
 //   function updateField<K extends keyof FormState>(k: K, v: string) {
 //     setForm((s) => ({ ...s, [k]: v }));
 //     setFormErrors((fe) => ({ ...fe, [k]: undefined }));
@@ -411,7 +599,7 @@
 //             <thead className="bg-slate-50">
 //               <tr>
 //                 <th className="px-4 py-3">ID</th>
-//                 <th className="px-4 py-3">Product ID</th>
+//                 <th className="px-4 py-3">Product</th>
 //                 <th className="px-4 py-3">Quantity</th>
 //                 <th className="px-4 py-3">Type</th>
 //                 <th className="px-4 py-3">Vendor</th>
@@ -438,10 +626,14 @@
 //                 items.map((it) => (
 //                   <tr key={String(it.id)} className="border-t hover:bg-slate-50 transition">
 //                     <td className="px-4 py-3">{String(it.id).slice(0, 8)}</td>
-//                     <td className="px-4 py-3">{it.product_id}</td>
+//                     <td className="px-4 py-3">
+//                       <div className="font-medium">{getProductName(it.product_id)}</div>
+//                     </td>
 //                     <td className="px-4 py-3">{it.quantity}</td>
 //                     <td className="px-4 py-3">{it.type}</td>
-//                     <td className="px-4 py-3">{it.vendor_id ?? "-"}</td>
+//                     <td className="px-4 py-3">
+//                       <div className="text-sm">{getVendorName(it.vendor_id)}</div>
+//                     </td>
 //                     <td className="px-4 py-3">{it.note ?? "-"}</td>
 //                     <td className="px-4 py-3">{it.created_at ? new Date(String(it.created_at)).toLocaleString() : "-"}</td>
 //                     <td className="px-4 py-3">
@@ -478,7 +670,7 @@
 //               <div key={String(it.id)} className="border rounded-lg p-3 hover:bg-slate-50 transition">
 //                 <div className="flex justify-between items-start">
 //                   <div>
-//                     <div className="font-medium">Product: {it.product_id}</div>
+//                     <div className="font-medium">Product: {getProductName(it.product_id)}</div>
 //                     <div className="text-sm text-slate-600">Type: {it.type}</div>
 //                   </div>
 //                   <div className="text-right">
@@ -486,7 +678,8 @@
 //                     <div className="text-xs text-slate-500">{it.created_at ? new Date(String(it.created_at)).toLocaleString() : "-"}</div>
 //                   </div>
 //                 </div>
-//                 <div className="mt-3 text-sm text-slate-600">{it.note ?? "-"}</div>
+//                 <div className="mt-3 text-sm text-slate-600">Vendor: {getVendorName(it.vendor_id)}</div>
+//                 <div className="mt-2 text-sm text-slate-600">{it.note ?? "-"}</div>
 //                 <div className="mt-3 flex gap-2">
 //                   <button onClick={() => openEdit(it)} className="flex-1 p-2 border rounded hover:bg-slate-100 inline-flex items-center justify-center gap-2">
 //                     <Edit3 /> Edit
@@ -511,10 +704,25 @@
 //                 <X className="w-4 h-4" />
 //               </button>
 //             </div>
+
 //             <form onSubmit={saveItem} className="p-4 space-y-4">
+//               {/* General server errors */}
+//               {generalErrors.length > 0 && (
+//                 <div className="bg-red-50 border border-red-200 text-red-800 rounded p-3">
+//                   <div className="font-medium">Server returned errors:</div>
+//                   <ul className="list-disc list-inside mt-1 text-sm">
+//                     {generalErrors.map((g, idx) => (
+//                       <li key={idx}>{g}</li>
+//                     ))}
+//                   </ul>
+//                 </div>
+//               )}
+
 //               <div>
-//                 <label className="block text-sm font-medium mb-1">Product ID</label>
+//                 <label className="block text-sm font-medium mb-1">Product</label>
 //                 <select
+//                   ref={productRef}
+//                   name="product_id"
 //                   value={form.product_id}
 //                   onChange={(e) => updateField("product_id", e.target.value)}
 //                   className={`w-full p-2 border rounded ${formErrors.product_id ? "border-red-400" : ""}`}
@@ -537,13 +745,27 @@
 //               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 //                 <div>
 //                   <label className="block text-sm font-medium mb-1">Quantity</label>
-//                   <input value={form.quantity} onChange={(e) => updateField("quantity", e.target.value)} type="number" min="0" className={`w-full p-2 border rounded ${formErrors.quantity ? "border-red-400" : ""}`} />
+//                   <input
+//                     ref={quantityRef}
+//                     name="quantity"
+//                     value={form.quantity}
+//                     onChange={(e) => updateField("quantity", e.target.value)}
+//                     type="number"
+//                     min="0"
+//                     className={`w-full p-2 border rounded ${formErrors.quantity ? "border-red-400" : ""}`}
+//                   />
 //                   {formErrors.quantity && <div className="text-xs text-red-500 mt-1">{formErrors.quantity}</div>}
 //                 </div>
 
 //                 <div>
 //                   <label className="block text-sm font-medium mb-1">Type</label>
-//                   <select value={form.type} onChange={(e) => updateField("type", e.target.value)} className={`w-full p-2 border rounded ${formErrors.type ? "border-red-400" : ""}`}>
+//                   <select
+//                     ref={typeRef}
+//                     name="type"
+//                     value={form.type}
+//                     onChange={(e) => updateField("type", e.target.value)}
+//                     className={`w-full p-2 border rounded ${formErrors.type ? "border-red-400" : ""}`}
+//                   >
 //                     <option value="in">In (stock in)</option>
 //                     <option value="out">Out (stock out)</option>
 //                   </select>
@@ -553,7 +775,13 @@
 
 //               <div>
 //                 <label className="block text-sm font-medium mb-1">Vendor (optional)</label>
-//                 <select value={form.vendor_id} onChange={(e) => updateField("vendor_id", e.target.value)} className="w-full p-2 border rounded">
+//                 <select
+//                   ref={vendorRef}
+//                   name="vendor_id"
+//                   value={form.vendor_id}
+//                   onChange={(e) => updateField("vendor_id", e.target.value)}
+//                   className="w-full p-2 border rounded"
+//                 >
 //                   <option value="">-- select vendor (optional) --</option>
 //                   {vendorOptions.map((v) => (
 //                     <option key={v.id} value={v.id}>
@@ -566,15 +794,26 @@
 //                 ) : (
 //                   <div className="text-xs text-slate-400 mt-1">Choose vendor by id (label shows id — name)</div>
 //                 )}
+//                 {formErrors.vendor_id && <div className="text-xs text-red-500 mt-1">{formErrors.vendor_id}</div>}
 //               </div>
 
 //               <div>
 //                 <label className="block text-sm font-medium mb-1">Note (optional)</label>
-//                 <textarea value={form.note} onChange={(e) => updateField("note", e.target.value)} className="w-full p-2 border rounded" rows={3} />
+//                 <textarea
+//                   ref={noteRef}
+//                   name="note"
+//                   value={form.note}
+//                   onChange={(e) => updateField("note", e.target.value)}
+//                   className="w-full p-2 border rounded"
+//                   rows={3}
+//                 />
+//                 {formErrors.note && <div className="text-xs text-red-500 mt-1">{formErrors.note}</div>}
 //               </div>
 
 //               <div className="flex justify-end gap-2">
-//                 <button type="button" onClick={() => { setModalOpen(false); setEditing(null); }} className="px-4 py-2 rounded border hover:bg-slate-100">Cancel</button>
+//                 <button type="button" onClick={() => { setModalOpen(false); setEditing(null); }} className="px-4 py-2 rounded border hover:bg-slate-100">
+//                   Cancel
+//                 </button>
 //                 <button type="submit" disabled={saving} className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
 //                   {saving ? (editing ? "Saving…" : "Adding…") : editing ? "Save Changes" : "Add Inventory"}
 //                 </button>
@@ -590,7 +829,9 @@
 //           <div className="absolute inset-0 bg-black/30" onClick={() => setDeleteTarget(null)} />
 //           <div className="relative bg-white w-full max-w-md rounded-lg shadow-lg z-10 p-5">
 //             <h3 className="text-lg font-medium">Confirm delete</h3>
-//             <p className="text-sm text-slate-600 mt-2">Are you sure you want to delete this inventory record (product {deleteTarget.product_id})?</p>
+//             <p className="text-sm text-slate-600 mt-2">
+//               Are you sure you want to delete this inventory record (product {getProductName(deleteTarget.product_id)})?
+//             </p>
 //             <div className="mt-4 flex justify-end gap-2">
 //               <button onClick={() => setDeleteTarget(null)} disabled={deleteLoading} className="px-3 py-1 rounded border hover:bg-slate-100">Cancel</button>
 //               <button onClick={() => void doDelete()} disabled={deleteLoading} className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">
@@ -605,9 +846,7 @@
 // };
 
 // export default InventoryManager;
-// src/components/InventoryManager.tsx
-// src/components/InventoryManager.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Plus, Edit3, Trash2, X, RefreshCw } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import api from "@/api/axios";
@@ -662,34 +901,95 @@ function formatAxiosError(err: unknown) {
   }
 }
 
-function extractFieldErrors(responseData: any): Record<string, string> | null {
-  if (!responseData) return null;
-  if (responseData.errors && typeof responseData.errors === "object") {
-    const out: Record<string, string> = {};
-    for (const k of Object.keys(responseData.errors)) {
-      const v = responseData.errors[k];
-      out[k] = Array.isArray(v) ? String(v[0]) : String(v);
-    }
-    return out;
+/** Heuristic mapping from server field key to our form field name */
+function mapServerFieldToFormField(key: string): string | null {
+  if (!key) return null;
+  const k = key.toLowerCase();
+  if (k.includes("product")) return "product_id";
+  if (k.includes("qty") || k.includes("quantity")) return "quantity";
+  if (k.includes("type")) return "type";
+  if (k.includes("vendor")) return "vendor_id";
+  if (k.includes("note")) return "note";
+  const simple = ["product_id", "quantity", "type", "vendor_id", "note"];
+  if (simple.includes(k)) return k;
+  return null;
+}
+
+/** Extracts field-level errors and general messages from many shapes */
+function extractServerErrors(payload: any): { fieldErrors: Record<string, string>; general: string[] } {
+  const fieldErrors: Record<string, string> = {};
+  const general: string[] = [];
+  if (!payload) return { fieldErrors, general };
+
+  const pushGeneral = (m: any) => {
+    if (m == null) return;
+    if (Array.isArray(m)) m.forEach((x) => pushGeneral(x));
+    else general.push(String(m));
+  };
+
+  if (payload.message) {
+    pushGeneral(payload.message);
   }
-  if (responseData.validation && typeof responseData.validation === "object") {
-    const out: Record<string, string> = {};
-    for (const k of Object.keys(responseData.validation)) {
-      const v = responseData.validation[k];
-      out[k] = Array.isArray(v) ? String(v[0]) : String(v);
-    }
-    return out;
+  if (Array.isArray(payload.messages)) pushGeneral(payload.messages);
+
+  if (payload.errors && typeof payload.errors === "object") {
+    Object.keys(payload.errors).forEach((k) => {
+      const v = payload.errors[k];
+      const mapped = mapServerFieldToFormField(k) ?? k;
+      if (Array.isArray(v)) fieldErrors[mapped] = String(v.join(", "));
+      else if (typeof v === "object") {
+        try {
+          const arr = Array.isArray(v) ? v : Object.values(v);
+          if (arr.length) fieldErrors[mapped] = String(arr[0]);
+          else fieldErrors[mapped] = String(JSON.stringify(v));
+        } catch {
+          fieldErrors[mapped] = String(v);
+        }
+      } else fieldErrors[mapped] = String(v);
+    });
   }
-  const possible = ["product_id", "quantity", "type", "vendor_id", "note"];
-  const out: Record<string, string> = {};
-  let found = false;
+
+  const maybe = payload.data ?? payload.error ?? null;
+  if (maybe && typeof maybe === "object") {
+    if (maybe.errors && typeof maybe.errors === "object") {
+      Object.keys(maybe.errors).forEach((k) => {
+        const v = maybe.errors[k];
+        const mapped = mapServerFieldToFormField(k) ?? k;
+        if (Array.isArray(v)) fieldErrors[mapped] = String(v.join(", "));
+        else fieldErrors[mapped] = String(v);
+      });
+    }
+    if (maybe.validation && typeof maybe.validation === "object") {
+      Object.keys(maybe.validation).forEach((k) => {
+        const v = maybe.validation[k];
+        const mapped = mapServerFieldToFormField(k) ?? k;
+        if (Array.isArray(v)) fieldErrors[mapped] = String(v.join(", "));
+        else fieldErrors[mapped] = String(v);
+      });
+    }
+    if (maybe.message) pushGeneral(maybe.message);
+    if (Array.isArray(maybe.messages)) pushGeneral(maybe.messages);
+  }
+
+  const possible = ["product_id", "product", "quantity", "qty", "type", "vendor", "vendor_id", "note"];
   for (const f of possible) {
-    if (responseData[f]) {
-      out[f] = String(responseData[f]);
-      found = true;
+    if (payload[f]) {
+      const mapped = mapServerFieldToFormField(f) ?? f;
+      if (!fieldErrors[mapped]) {
+        if (Array.isArray(payload[f])) fieldErrors[mapped] = String(payload[f].join(", "));
+        else fieldErrors[mapped] = String(payload[f]);
+      }
     }
   }
-  return found ? out : null;
+
+  if (payload.status === false && general.length === 0 && Object.keys(fieldErrors).length === 0) {
+    if (payload.error) pushGeneral(payload.error);
+    else if (payload.message) pushGeneral(payload.message);
+    else pushGeneral("Request failed");
+  }
+
+  const dedupGen = Array.from(new Set(general.map((s) => String(s).trim()).filter(Boolean)));
+  return { fieldErrors, general: dedupGen };
 }
 
 /* -------------------------
@@ -704,6 +1004,7 @@ const InventoryManager: React.FC = () => {
   const [editing, setEditing] = useState<Inventory | null>(null);
   const [form, setForm] = useState<FormState>(defaultForm);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [generalErrors, setGeneralErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Inventory | null>(null);
@@ -715,15 +1016,27 @@ const InventoryManager: React.FC = () => {
   const [vendors, setVendors] = useState<any[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
 
-  // -------------------------
-  // Product & Vendor endpoints
-  // NOTE: using api instance; baseURL assumed set in api
-  // -------------------------
+  // refs for focusing
+  const productRef = useRef<HTMLSelectElement | null>(null);
+  const quantityRef = useRef<HTMLInputElement | null>(null);
+  const typeRef = useRef<HTMLSelectElement | null>(null);
+  const vendorRef = useRef<HTMLSelectElement | null>(null);
+  const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  const FIELD_ORDER = ["product_id", "quantity", "type", "vendor_id", "note"];
+
+  // --- PRODUCT & VENDOR ENDPOINTS --- //
   async function fetchProductsList() {
     setProductsLoading(true);
     try {
       const res = await api.get("/admin/products/show");
       const body = res.data;
+      if (body && body.status === false) {
+        const { general } = extractServerErrors(body);
+        if (general.length) general.forEach((m) => toast.error(m));
+        else toast.error(body.message ?? "Failed to load products");
+        setProducts([]);
+        return;
+      }
       const rows: any[] = Array.isArray(body)
         ? body
         : Array.isArray(body?.data)
@@ -750,6 +1063,13 @@ const InventoryManager: React.FC = () => {
     try {
       const res = await api.get("/admin/settings/vendors/show");
       const body = res.data;
+      if (body && body.status === false) {
+        const { general } = extractServerErrors(body);
+        if (general.length) general.forEach((m) => toast.error(m));
+        else toast.error(body.message ?? "Failed to load vendors");
+        setVendors([]);
+        return;
+      }
       const rows: any[] = Array.isArray(body)
         ? body
         : Array.isArray(body?.data)
@@ -795,7 +1115,6 @@ const InventoryManager: React.FC = () => {
     const pid = String(productId);
     const found = productOptions.find((p) => p.id === pid);
     if (found) return found.raw?.name ?? found.raw?.title ?? String(pid);
-    // fallback to searching raw products with other id keys
     const fallback = products.find((p) => String(p?.id ?? p?._id ?? p?.product_id ?? p?.productId) === pid);
     if (fallback) return fallback?.name ?? fallback?.title ?? pid;
     return String(pid);
@@ -811,13 +1130,19 @@ const InventoryManager: React.FC = () => {
     return String(vid);
   }
 
-  // --- Inventory API helpers ---
+  // --- Inventory API helpers --- //
   async function fetchItems() {
     setLoading(true);
     try {
       const res = await api.get("/admin/settings/stock-inventory/show");
       const body = res.data;
-      console.log("BODY",body)
+      if (body && body.status === false) {
+        const { general } = extractServerErrors(body);
+        if (general.length) general.forEach((m) => toast.error(m));
+        else toast.error(body.message ?? "Failed to load inventory");
+        setItems([]);
+        return;
+      }
       const rows: any[] = Array.isArray(body)
         ? body
         : Array.isArray(body?.data)
@@ -863,9 +1188,11 @@ const InventoryManager: React.FC = () => {
     setEditing(null);
     setForm(defaultForm);
     setFormErrors({});
+    setGeneralErrors([]);
     setModalOpen(true);
     if (!products.length) void fetchProductsList();
     if (!vendors.length) void fetchVendorsList();
+    setTimeout(() => productRef.current?.focus(), 80);
   }
 
   function openEdit(it: Inventory) {
@@ -878,7 +1205,9 @@ const InventoryManager: React.FC = () => {
       note: String(it.note ?? ""),
     });
     setFormErrors({});
+    setGeneralErrors([]);
     setModalOpen(true);
+    setTimeout(() => productRef.current?.focus(), 80);
   }
 
   function validateForm(): boolean {
@@ -891,13 +1220,31 @@ const InventoryManager: React.FC = () => {
     return Object.keys(e).length === 0;
   }
 
+  function focusFirstInvalidField(fieldErrs: Record<string, string>) {
+    for (const f of FIELD_ORDER) {
+      if (fieldErrs[f]) {
+        if (f === "product_id") productRef.current?.focus();
+        else if (f === "quantity") quantityRef.current?.focus();
+        else if (f === "type") typeRef.current?.focus();
+        else if (f === "vendor_id") vendorRef.current?.focus();
+        else if (f === "note") noteRef.current?.focus();
+        break;
+      }
+    }
+  }
+
   async function saveItem(e?: React.FormEvent) {
     e?.preventDefault();
+    setFormErrors({});
+    setGeneralErrors([]);
+
     if (!validateForm()) {
       toast.error("Fix validation errors");
+      focusFirstInvalidField(formErrors);
       return;
     }
     setSaving(true);
+
     try {
       const payload = {
         product_id: form.product_id,
@@ -911,8 +1258,26 @@ const InventoryManager: React.FC = () => {
         const updatedCandidate: Inventory = { ...editing, ...payload, quantity: Number(payload.quantity) };
         setItems((p) => p.map((it) => (String(it.id) === String(editing.id) ? updatedCandidate : it)));
         setModalOpen(false);
+
         const res = await api.post(`/admin/settings/stock-inventory/update/${editing.id}`, payload);
-        const raw = res.data?.data ?? res.data?.inventory ?? res.data ?? null;
+        const body = res.data ?? res;
+        if (body && body.status === false) {
+          const { fieldErrors, general } = extractServerErrors(body);
+          if (Object.keys(fieldErrors).length) {
+            setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
+            focusFirstInvalidField(fieldErrors);
+            toast.error("Validation errors received from server");
+          }
+          if (general.length) {
+            setGeneralErrors(general);
+            general.forEach((m) => toast.error(m));
+          }
+          await fetchItems();
+          setSaving(false);
+          return;
+        }
+
+        const raw = body?.data ?? body?.inventory ?? body ?? null;
         const updated = raw ? normalizeInventory(raw) : updatedCandidate;
         setItems((p) => p.map((it) => (String(it.id) === String(editing.id) ? updated : it)));
         toast.success("Inventory updated");
@@ -930,8 +1295,25 @@ const InventoryManager: React.FC = () => {
         setModalOpen(false);
 
         const res = await api.post("/admin/settings/stock-inventory/add", payload);
-        const raw = res.data?.data ?? res.data?.inventory ?? res.data ?? null;
-        const created = raw ? normalizeInventory(raw) : { ...optimistic, id: res.data?.id ?? tmpId };
+        const body = res.data ?? res;
+        if (body && body.status === false) {
+          const { fieldErrors, general } = extractServerErrors(body);
+          if (Object.keys(fieldErrors).length) {
+            setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
+            focusFirstInvalidField(fieldErrors);
+            toast.error("Validation errors received from server");
+          }
+          if (general.length) {
+            setGeneralErrors(general);
+            general.forEach((m) => toast.error(m));
+          }
+          await fetchItems();
+          setSaving(false);
+          return;
+        }
+
+        const raw = body?.data ?? body?.inventory ?? body ?? null;
+        const created = raw ? normalizeInventory(raw) : { ...optimistic, id: body?.id ?? tmpId };
         setItems((p) => [created, ...p.filter((x) => x.id !== tmpId)]);
         toast.success("Inventory added");
       }
@@ -939,20 +1321,28 @@ const InventoryManager: React.FC = () => {
       setEditing(null);
       setForm(defaultForm);
       setFormErrors({});
+      setGeneralErrors([]);
     } catch (err: unknown) {
       const { message, details, status } = formatAxiosError(err);
       console.error("Save inventory error:", { message, status, details, raw: err });
 
       const ae = err as AxiosError & { response?: any };
-      const fieldErrs = extractFieldErrors(ae?.response?.data ?? null);
-      if (fieldErrs) {
-        setFormErrors((prev) => ({ ...prev, ...fieldErrs }));
-        toast.error("Validation error — check fields");
+      const payload = ae?.response?.data ?? null;
+      if (payload) {
+        const { fieldErrors, general } = extractServerErrors(payload);
+        if (Object.keys(fieldErrors).length) {
+          setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
+          focusFirstInvalidField(fieldErrors);
+          toast.error("Validation error — check fields");
+        }
+        if (general.length) {
+          setGeneralErrors(general);
+          general.forEach((g) => toast.error(g));
+        }
       } else {
         toast.error(message ?? "Failed to save inventory");
       }
 
-      // re-fetch to rollback optimistic changes if any
       await fetchItems();
     } finally {
       setSaving(false);
@@ -970,8 +1360,16 @@ const InventoryManager: React.FC = () => {
     const prev = items;
     setItems((p) => p.filter((x) => String(x.id) !== String(id)));
     try {
-      await api.delete(`/admin/settings/stock-inventory/delete/${id}`);
-      toast.success("Inventory deleted");
+      const res = await api.delete(`/admin/settings/stock-inventory/delete/${id}`);
+      const body = res.data ?? res;
+      if (body && body.status === false) {
+        const { general } = extractServerErrors(body);
+        if (general.length) general.forEach((g) => toast.error(g));
+        else toast.error(body.message ?? "Delete failed");
+        setItems(prev);
+      } else {
+        toast.success("Inventory deleted");
+      }
     } catch (err: unknown) {
       const { message } = formatAxiosError(err);
       console.error("Delete inventory error:", { message, raw: err });
@@ -991,7 +1389,7 @@ const InventoryManager: React.FC = () => {
       await fetchVendorsList();
       toast.success("Inventory, products & vendors refreshed");
     } catch {
-      // inner functions already handle errors/toasts
+      // inner functions already show toasts
     } finally {
       setRefreshing(false);
     }
@@ -1008,27 +1406,32 @@ const InventoryManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-2xl font-semibold text-slate-800">Inventory Management</h2>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <button
             onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700 transition"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700 transition w-full sm:w-auto justify-center"
+            aria-label="Add inventory"
           >
-            <Plus className="w-4 h-4" /> Add Inventory
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Inventory</span>
+            <span className="sm:hidden">Add</span>
           </button>
 
           <button
             onClick={() => void handleRefresh()}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-slate-50 transition"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-slate-50 transition w-full sm:w-auto justify-center"
+            aria-label="Refresh inventory"
           >
             <RefreshCw className="w-4 h-4" />
-            {refreshing ? "Refreshing..." : "Refresh"}
+            <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+            <span className="sm:hidden">{refreshing ? "..." : "Ref"}</span>
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="hidden md:block">
-          <table className="w-full text-sm text-left">
+        {/* Desktop / wider screens: responsive wrapper so table never overflows */}
+        <div className="w-full overflow-x-auto hidden md:block">
+          <table className="w-full text-sm text-left min-w-[720px]">
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-4 py-3">ID</th>
@@ -1058,34 +1461,43 @@ const InventoryManager: React.FC = () => {
               ) : (
                 items.map((it) => (
                   <tr key={String(it.id)} className="border-t hover:bg-slate-50 transition">
-                    <td className="px-4 py-3">{String(it.id).slice(0, 8)}</td>
-
-                    {/* Product column: show name only (no small id) */}
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{getProductName(it.product_id)}</div>
+                    <td className="px-4 py-3 align-top">
+                      <div className="text-xs text-slate-600 truncate" title={String(it.id)}>{String(it.id)}</div>
                     </td>
 
-                    <td className="px-4 py-3">{it.quantity}</td>
-                    <td className="px-4 py-3">{it.type}</td>
-
-                    {/* Vendor column: show name only (no small id) */}
-                    <td className="px-4 py-3">
-                      <div className="text-sm">{getVendorName(it.vendor_id)}</div>
+                    <td className="px-4 py-3 align-top">
+                      <div className="font-medium truncate max-w-xs" title={getProductName(it.product_id)}>{getProductName(it.product_id)}</div>
                     </td>
 
-                    <td className="px-4 py-3">{it.note ?? "-"}</td>
-                    <td className="px-4 py-3">{it.created_at ? new Date(String(it.created_at)).toLocaleString() : "-"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                    <td className="px-4 py-3 align-top">
+                      <div className="font-semibold">{it.quantity}</div>
+                    </td>
+
+                    <td className="px-4 py-3 align-top">
+                      <span className={`inline-block px-2 py-0.5 text-xs rounded ${it.type === "in" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>
+                        {it.type}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 align-top text-sm text-slate-600 truncate">{getVendorName(it.vendor_id)}</td>
+
+                    <td className="px-4 py-3 align-top text-sm text-slate-600 truncate max-w-[200px]" title={it.note ?? "-"}>{it.note ?? "-"}</td>
+
+                    <td className="px-4 py-3 align-top text-sm text-slate-600">
+                      {it.created_at ? new Date(String(it.created_at)).toLocaleString() : "-"}
+                    </td>
+
+                    <td className="px-4 py-3 align-top">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => openEdit(it)}
-                          className="px-3 py-1 rounded border inline-flex items-center gap-2 hover:bg-slate-100 transition"
+                          className="px-3 py-1 rounded border inline-flex items-center gap-2 hover:bg-slate-100 transition text-sm"
                         >
                           <Edit3 className="w-4 h-4" /> Edit
                         </button>
                         <button
                           onClick={() => confirmDelete(it)}
-                          className="px-3 py-1 rounded bg-red-600 text-white inline-flex items-center gap-2 hover:bg-red-700 transition"
+                          className="px-3 py-1 rounded bg-red-600 text-white inline-flex items-center gap-2 hover:bg-red-700 transition text-sm"
                         >
                           <Trash2 className="w-4 h-4" /> Delete
                         </button>
@@ -1098,7 +1510,7 @@ const InventoryManager: React.FC = () => {
           </table>
         </div>
 
-        {/* mobile cards */}
+        {/* Mobile cards: visible on md and below */}
         <div className="md:hidden p-4 grid gap-3">
           {loading ? (
             <div className="text-center text-slate-500">Loading…</div>
@@ -1107,24 +1519,29 @@ const InventoryManager: React.FC = () => {
           ) : (
             items.map((it) => (
               <div key={String(it.id)} className="border rounded-lg p-3 hover:bg-slate-50 transition">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-medium">Product: {getProductName(it.product_id)}</div>
-                    <div className="text-sm text-slate-600">Type: {it.type}</div>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate" title={getProductName(it.product_id)}>Product: {getProductName(it.product_id)}</div>
+                    <div className="text-sm text-slate-600 mt-1 truncate">Type: {it.type}</div>
+                    <div className="text-sm text-slate-600 mt-1 truncate">Vendor: {getVendorName(it.vendor_id)}</div>
+                    <div className="text-sm text-slate-600 mt-1 truncate">Note: {it.note ?? "-"}</div>
                   </div>
-                  <div className="text-right">
+
+                  <div className="text-right flex-shrink-0">
                     <div className="text-lg font-semibold">{it.quantity}</div>
-                    <div className="text-xs text-slate-500">{it.created_at ? new Date(String(it.created_at)).toLocaleString() : "-"}</div>
+                    <div className="text-xs text-slate-500 mt-1">{it.created_at ? new Date(String(it.created_at)).toLocaleString() : "-"}</div>
+                    <div className={`mt-2 inline-block px-2 py-0.5 text-xs rounded ${it.type === "in" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>
+                      {it.type}
+                    </div>
                   </div>
                 </div>
-                <div className="mt-3 text-sm text-slate-600">Vendor: {getVendorName(it.vendor_id)}</div>
-                <div className="mt-2 text-sm text-slate-600">{it.note ?? "-"}</div>
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => openEdit(it)} className="flex-1 p-2 border rounded hover:bg-slate-100 inline-flex items-center justify-center gap-2">
-                    <Edit3 /> Edit
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => openEdit(it)} className="flex-1 p-2 border rounded hover:bg-slate-100 inline-flex items-center justify-center gap-2 text-sm">
+                    <Edit3 className="w-4 h-4" /> Edit
                   </button>
-                  <button onClick={() => confirmDelete(it)} className="flex-1 p-2 rounded bg-red-600 text-white hover:bg-red-700 inline-flex items-center justify-center gap-2">
-                    <Trash2 /> Delete
+                  <button onClick={() => confirmDelete(it)} className="flex-1 p-2 rounded bg-red-600 text-white hover:bg-red-700 inline-flex items-center justify-center gap-2 text-sm">
+                    <Trash2 className="w-4 h-4" /> Delete
                   </button>
                 </div>
               </div>
@@ -1139,14 +1556,28 @@ const InventoryManager: React.FC = () => {
           <div className="relative bg-white w-full max-w-lg rounded-lg shadow-lg z-10">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-medium">{editing ? "Edit Inventory" : "Add Inventory"}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded hover:bg-slate-100">
+              <button onClick={() => setModalOpen(false)} className="p-2 rounded hover:bg-slate-100" aria-label="Close modal">
                 <X className="w-4 h-4" />
               </button>
             </div>
+
             <form onSubmit={saveItem} className="p-4 space-y-4">
+              {generalErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 text-red-800 rounded p-3">
+                  <div className="font-medium">Server returned errors:</div>
+                  <ul className="list-disc list-inside mt-1 text-sm">
+                    {generalErrors.map((g, idx) => (
+                      <li key={idx}>{g}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium mb-1">Product</label>
                 <select
+                  ref={productRef}
+                  name="product_id"
                   value={form.product_id}
                   onChange={(e) => updateField("product_id", e.target.value)}
                   className={`w-full p-2 border rounded ${formErrors.product_id ? "border-red-400" : ""}`}
@@ -1169,13 +1600,27 @@ const InventoryManager: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Quantity</label>
-                  <input value={form.quantity} onChange={(e) => updateField("quantity", e.target.value)} type="number" min="0" className={`w-full p-2 border rounded ${formErrors.quantity ? "border-red-400" : ""}`} />
+                  <input
+                    ref={quantityRef}
+                    name="quantity"
+                    value={form.quantity}
+                    onChange={(e) => updateField("quantity", e.target.value)}
+                    type="number"
+                    min="0"
+                    className={`w-full p-2 border rounded ${formErrors.quantity ? "border-red-400" : ""}`}
+                  />
                   {formErrors.quantity && <div className="text-xs text-red-500 mt-1">{formErrors.quantity}</div>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Type</label>
-                  <select value={form.type} onChange={(e) => updateField("type", e.target.value)} className={`w-full p-2 border rounded ${formErrors.type ? "border-red-400" : ""}`}>
+                  <select
+                    ref={typeRef}
+                    name="type"
+                    value={form.type}
+                    onChange={(e) => updateField("type", e.target.value)}
+                    className={`w-full p-2 border rounded ${formErrors.type ? "border-red-400" : ""}`}
+                  >
                     <option value="in">In (stock in)</option>
                     <option value="out">Out (stock out)</option>
                   </select>
@@ -1185,7 +1630,13 @@ const InventoryManager: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Vendor (optional)</label>
-                <select value={form.vendor_id} onChange={(e) => updateField("vendor_id", e.target.value)} className="w-full p-2 border rounded">
+                <select
+                  ref={vendorRef}
+                  name="vendor_id"
+                  value={form.vendor_id}
+                  onChange={(e) => updateField("vendor_id", e.target.value)}
+                  className="w-full p-2 border rounded"
+                >
                   <option value="">-- select vendor (optional) --</option>
                   {vendorOptions.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -1198,15 +1649,26 @@ const InventoryManager: React.FC = () => {
                 ) : (
                   <div className="text-xs text-slate-400 mt-1">Choose vendor by id (label shows id — name)</div>
                 )}
+                {formErrors.vendor_id && <div className="text-xs text-red-500 mt-1">{formErrors.vendor_id}</div>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">Note (optional)</label>
-                <textarea value={form.note} onChange={(e) => updateField("note", e.target.value)} className="w-full p-2 border rounded" rows={3} />
+                <textarea
+                  ref={noteRef}
+                  name="note"
+                  value={form.note}
+                  onChange={(e) => updateField("note", e.target.value)}
+                  className="w-full p-2 border rounded"
+                  rows={3}
+                />
+                {formErrors.note && <div className="text-xs text-red-500 mt-1">{formErrors.note}</div>}
               </div>
 
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => { setModalOpen(false); setEditing(null); }} className="px-4 py-2 rounded border hover:bg-slate-100">Cancel</button>
+                <button type="button" onClick={() => { setModalOpen(false); setEditing(null); }} className="px-4 py-2 rounded border hover:bg-slate-100">
+                  Cancel
+                </button>
                 <button type="submit" disabled={saving} className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
                   {saving ? (editing ? "Saving…" : "Adding…") : editing ? "Save Changes" : "Add Inventory"}
                 </button>
@@ -1239,7 +1701,4 @@ const InventoryManager: React.FC = () => {
 };
 
 export default InventoryManager;
-
-
-
 

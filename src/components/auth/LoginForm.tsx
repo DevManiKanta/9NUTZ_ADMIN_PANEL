@@ -10,7 +10,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 
 export const LoginForm = () => {
-  const [username, setUsername] = useState(""); // <-- use username
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,11 +22,11 @@ export const LoginForm = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await login(username.trim(), password); // <-- pass username
+      const user = await login(username.trim(), password); 
       toast.success("Login successful");
       if (user) {
         setTimeout(() => {
-          navigate("/products", { replace: true });
+          navigate("/dashboard", { replace: true });
         }, 1000);
       } else {
         navigate("/", { replace: true });
