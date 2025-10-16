@@ -254,6 +254,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import api from "../../api/axios"; // adjust path if necessary
 
+
 type User = {
   id?: number | string;
   username?: string;
@@ -350,7 +351,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
-      const res = await api.post("/login", { username, password }, { headers: { Accept: "application/json" } });
+      const res = await api.post("/admin-login", { username, password }, { headers: { Accept: "application/json" } });
       const token = extractTokenFromLoginResponse(res?.data);
       if (!token) throw new Error("No token returned from server");
       saveToken(token);
@@ -372,7 +373,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) return null;
       setAxiosTokenHeader(token);
-      const res = await api.get("/login", { headers: { Accept: "application/json" } });
+      const res = await api.get("/admin-login", { headers: { Accept: "application/json" } });
       const u = extractUserFromResponse(res?.data ?? null);
       setUser(u);
       return u;

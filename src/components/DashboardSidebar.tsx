@@ -31,6 +31,7 @@ const navigationItems = [
   { id: "StockVariation", label: "Expenses Summary", path: "/StockVariation", icon: Repeat },
   { id: "routemap", label: "Pos Details", path: "/routemap", icon: Map },
   { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
+ { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
 ];
 
 const settingsChildren = [

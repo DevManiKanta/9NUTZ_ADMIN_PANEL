@@ -218,7 +218,7 @@ const App = () => (
               }
             />
               <Route
-              path="/QrPayments"
+              path="/orders"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
