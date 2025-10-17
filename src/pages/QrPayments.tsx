@@ -311,7 +311,7 @@ export default function QrPayments() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sl</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                  {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th> */}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₹)</th>
@@ -331,7 +331,7 @@ export default function QrPayments() {
                     <td className="px-4 py-3 text-sm text-gray-700">{i + 1}</td>
                     <td className="px-4 py-3 text-sm text-gray-800 font-medium break-all">{r.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{r.customerName || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{r.customerPhone || "-"}</td>
+                    {/* <td className="px-4 py-3 text-sm text-gray-700">{r.customerPhone || "-"}</td> */}
                     <td className="px-4 py-3 text-sm text-gray-700">{r.date}</td>
                     <td className="px-4 py-3 text-sm text-gray-700 capitalize">{r.payment || "-"}</td>
                     <td className="px-4 py-3 text-sm text-right text-gray-700">₹{formatCurrency(r.amount)}</td>
@@ -560,7 +560,7 @@ export default function QrPayments() {
                 <div className="text-sm sm:text-base font-medium">{selected.customerName || "-"}</div>
               </div>
               <div>
-                <div className="text-[11px] sm:text-xs text-gray-500">Phone</div>
+                {/* <div className="text-[11px] sm:text-xs text-gray-500">Phone</div> */}
                 <div className="text-sm sm:text-base font-medium">{selected.customerPhone || "-"}</div>
               </div>
               <div className="sm:col-span-2">
