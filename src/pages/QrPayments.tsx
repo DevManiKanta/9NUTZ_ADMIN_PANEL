@@ -1325,7 +1325,6 @@ export default function QrPayments() {
                   </tbody>
                 </table>
               </div>
-
               {(typeof selected.subtotal === "number" ||
                 typeof selected.gst_amount === "number" ||
                 typeof selected.discount_value === "number") && (

@@ -602,11 +602,14 @@ import {
   Image as ImageIcon,
   Settings,
 } from "lucide-react";
+  import dispatch from "react-redux"
 import { toast } from "react-hot-toast";
+import { setSiteSettings } from "../redux/slices/sitesettings";
 const LOCAL_API_BASE ="https://9nutsapi.nearbydoctors.in/public/api/"; // adjust if needed
 const TOKEN_KEY = "token"; // adjust if your app uses a different key
 export default function ProfilePage({ initialUser = null, initialOrders = [] }) {
   // --- hydrate helpers ---
+    const dispatch = useDispatch();
   const getSavedUser = () => {
     try {
       const raw = localStorage.getItem("user");
@@ -625,6 +628,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
       return null;
     }
   };
+  
   const getSavedSettings = () => {
     try {
       const raw = localStorage.getItem("settings");
@@ -635,7 +639,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
       return null;
     }
   };
-
+   
   const savedUser = getSavedUser();
   const savedSettings = getSavedSettings();
 
@@ -814,9 +818,11 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
           } else {
             localStorage.setItem("user", JSON.stringify(normalizedUser));
           }
+      
         } catch (e) {
           console.warn("localStorage update user failed:", e);
         }
+       dispatch(setSiteSettings(normalizedSettings));
       }
 
       // 2) Settings-like response (object)

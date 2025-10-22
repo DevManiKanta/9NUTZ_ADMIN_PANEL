@@ -16,6 +16,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { IMAGES } from "@/assets/Images";
 import { useAuth } from "@/components/contexts/AuthContext";
+import { useSelector } from "react-redux";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -37,6 +38,10 @@ export const DashboardHeader: React.FC<HeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+    const settings = useSelector((state) => state.sitesettings || {});
+
+  const logoSrc = settings.logo_url 
+  const siteName = settings.site_name || "9nutz";
   const { logout, user } = useAuth();
 
   const [plusOpen, setPlusOpen] = useState(false);
