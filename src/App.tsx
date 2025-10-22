@@ -31,6 +31,7 @@ import CrmReport from "./pages/CrmReport";
 import SkuList from "@/pages/SkuList";
 import SkuMovement from "@/pages/SkuMovement";
 import Sku from "@/pages/Sku";
+import ExpenseSummary from "./pages/ExpenseSummary";
 import CashWithdrawl from "./pages/CashWithdrawl";
 import Billing from "./pages/Billing";
 import RealTimeInventory from "./pages/RealTimeInventory";
@@ -55,7 +56,6 @@ import RentVehiclePaymentsList from "./pages/RentVehiclePaymentsList";
 import FranchiseRequests from "./pages/FranchiseRequests";
 import CommingSoon from "./pages/CommingSoon";
 import Bannerspage from "./pages/Bannerspage"
-// import ExpensesSummary from "./pages/"
 import PublicRoute from "@/components/auth/ProtectedRoute";
 import { Provider } from "react-redux";
 import { store } from "@/redux/store";
@@ -293,7 +293,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <ExpensesSummary/>
+                    <ExpenseSummary />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
