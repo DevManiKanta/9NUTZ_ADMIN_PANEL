@@ -32,6 +32,7 @@ const navigationItems = [
   { id: "routemap", label: "Pos Details", path: "/routemap", icon: Map },
   { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
  { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
+ { id: "BannersPage", label: "Banners", path: "/BannersPage", icon: Map },
 ];
 
 const settingsChildren = [

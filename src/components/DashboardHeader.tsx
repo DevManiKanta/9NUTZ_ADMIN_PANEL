@@ -267,7 +267,7 @@ export const DashboardHeader: React.FC<HeaderProps> = ({
                     <span className="text-sm font-medium text-white">{(user?.name ?? user?.username ?? "A")[0]}</span>
                   </div>
                   <div className="text-sm">
-                    <div className="font-medium">{user?.name ?? user?.username ?? "Admin"}</div>
+                    <div className="font-medium" onClick={()=>navigate("/AdminProfilepage")}>{user?.name ?? user?.username ?? "Admin"}</div>
                     <div className="text-xs text-gray-500">{user?.username ?? ""}</div>
                   </div>
                 </div>

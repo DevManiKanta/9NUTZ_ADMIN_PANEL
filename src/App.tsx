@@ -27,15 +27,10 @@ import DiscountInvoices from "./pages/DiscountInvoices";
 import TeleCallerList from "./pages/TeleCallerList";
 import TeleCallerStatus from "./pages/TeleCallerStatus";
 import CrmReport from "./pages/CrmReport";
-// import Obsales from "./pages/Obsales"
-
 // NEW: SKU pages (place these files at src/pages/sku/ if not present)
 import SkuList from "@/pages/SkuList";
 import SkuMovement from "@/pages/SkuMovement";
 import Sku from "@/pages/Sku";
-// import BeatList from "./pages/BeatList";
-// import ObSales from "./pages/Obsales";
-import ExpenseSummary from "./pages/ExpenseSummary";
 import CashWithdrawl from "./pages/CashWithdrawl";
 import Billing from "./pages/Billing";
 import RealTimeInventory from "./pages/RealTimeInventory";
@@ -49,7 +44,7 @@ import GstProfitability from "./pages/GstProfitability";
 import GstCacheReport from "./pages/GstCacheReport";
 import NewVendor from "./pages/NewVendor";
 import VendorList from "./pages/VendorList";
-import NewRevisit from "./pages/NewRevisit";
+import Profilepage from "./pages/ProfilePage";
 import RevisitList from "./pages/RevisitList";
 import CategoryManagement from "./pages/CategoryManagement";
 import MasterManagement from "./pages/MasterManagement";
@@ -59,6 +54,8 @@ import ConsolidatedVehiclePay from "./pages/ConsolidatedVehiclePay";
 import RentVehiclePaymentsList from "./pages/RentVehiclePaymentsList";
 import FranchiseRequests from "./pages/FranchiseRequests";
 import CommingSoon from "./pages/CommingSoon";
+import Bannerspage from "./pages/Bannerspage"
+// import ExpensesSummary from "./pages/"
 import PublicRoute from "@/components/auth/ProtectedRoute";
 import { Provider } from "react-redux";
 import { store } from "@/redux/store";
@@ -296,7 +293,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <ExpenseSummary />
+                    <ExpensesSummary/>
                   </DashboardLayout>
                 </ProtectedRoute>
               }
@@ -352,11 +349,11 @@ const App = () => (
               }
             />
              <Route
-              path="/Settlement"
+              path="/Bannerspage"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <Settlement />
+                    <Bannerspage />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
@@ -441,11 +438,11 @@ const App = () => (
 
             {/* ---------- start REVIST routes ---------- */}
             <Route
-              path="/NewRevist"
+              path="/AdminProfilepage"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <NewRevisit />
+                    <Profilepage />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
