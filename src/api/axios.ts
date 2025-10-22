@@ -1,7 +1,7 @@
 // src/lib/axios.ts
 import axios, { AxiosError, AxiosInstance } from "axios";
 
-export const BASE_URL_1 = "http://192.168.29.100:8000/api";
+// export const BASE_URL_1 = "http://192.168.29.100:8000/api";
 const BASE_URL_2 ="https://9nutsapi.nearbydoctors.in/public/api";
 
 const api: AxiosInstance = axios.create({

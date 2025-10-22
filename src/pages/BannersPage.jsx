@@ -10,11 +10,11 @@ import {
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
-const API_BASE = "http://192.168.29.100:8000/api";
-const TOKEN_KEY = "token"; // change if your app uses a different storage key
+const API_BASE = "https://9nutsapi.nearbydoctors.in/public/api";
+const TOKEN_KEY = localStorage.getItem("token"); // change if your app uses a different storage key
 
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY) || "";
+  return localStorage.getItem("token") || "";
 }
 
 function safeJson(res) {
@@ -47,7 +47,7 @@ export default function BannersPage() {
     setLoading(true);
     const id = toast.loading("Loading banners...");
     try {
-      const res = await fetch(`${API_BASE}/admin/banners/`, {
+      const res = await fetch(`${API_BASE}/admin/banners`, {
         method: "GET",
         headers: {
           Accept: "application/json",

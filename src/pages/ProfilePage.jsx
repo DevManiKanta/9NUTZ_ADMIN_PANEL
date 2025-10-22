@@ -603,20 +603,8 @@ import {
   Settings,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-
-/**
- * ProfilePage
- *
- * - Fetches settings/profile from GET `${LOCAL_API_BASE}/settings`
- * - Updates data via POST `${LOCAL_API_BASE}/admin/settings/update` using FormData (matches your curl).
- * - Persists user/settings to localStorage to avoid flashing empty UI after navigation.
- *
- * NOTE: Do not change API endpoints unless your backend differs.
- */
-
-const LOCAL_API_BASE ="http://192.168.29.100:8000/api/"; // adjust if needed
+const LOCAL_API_BASE ="https://9nutsapi.nearbydoctors.in/public/api/"; // adjust if needed
 const TOKEN_KEY = "token"; // adjust if your app uses a different key
-
 export default function ProfilePage({ initialUser = null, initialOrders = [] }) {
   // --- hydrate helpers ---
   const getSavedUser = () => {
@@ -848,8 +836,8 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
           altphone: settingsObj.altphone ?? settingsObj.alt_phone ?? "",
           whatappnumber: settingsObj.whatappnumber ?? settingsObj.whatsapp ?? settingsObj.whatsapp_number ?? "",
           address: settingsObj.address ?? settingsObj.addr ?? "",
-          logo_url: settingsObj.logo ?? settingsObj.logo_url ?? settings.logo_url ?? "",
-          favicon_url: settingsObj.favicon ?? settingsObj.favicon_url ?? settings.favicon_url ?? "",
+          logo_url: settingsObj.logo_url ?? settingsObj.logo_url ?? settings.logo_url ?? "",
+          favicon_url: settingsObj.favicon_url ?? settingsObj.favicon_url ?? settings.favicon_url ?? "",
         };
         setSettings((prev) => ({ ...prev, ...normalizedSettings }));
         // persist
@@ -1096,10 +1084,8 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
       setIsUpdating(false);
     }
   };
-
   // display name helper
   const displayName = user?.name || user?.fullName || user?.username || "User";
-
   return (
     <div className="space-y-8">
       {/* Top: Personal Details + Quick Stats */}
@@ -1111,7 +1097,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
               <Settings className="h-5 w-5" /> Site Settings
             </h3>
             {settings?.logo_url ? (
-              <img src={settings.logo_url} alt="logo" className="h-8 object-contain" />
+              <img src={settings.logo_url} alt="logo" className="h-20 w-20 object-contain" />
             ) : (
               <div className="text-sm text-gray-400 flex items-center gap-2">
                 <ImageIcon className="h-5 w-5" /> No logo

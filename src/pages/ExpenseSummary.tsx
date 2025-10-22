@@ -772,8 +772,8 @@ import {
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
-const API_BASE = "http://192.168.29.100:8000/api";
-const TOKEN_KEY = "token";
+const API_BASE = "https://9nutsapi.nearbydoctors.in/public/api";
+const TOKEN_KEY = localStorage.getItem("token")
 const FILE_BASE = API_BASE.replace(/\/api\/?$/, "");
 
 type RawExpense = Record<string, any>;
@@ -810,7 +810,7 @@ type FormState = {
 };
 
 const getTokenHeader = (): Record<string, string> => {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -1394,7 +1394,7 @@ export default function ExpenseSummary(): JSX.Element {
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Category ID</th>
+                {/* <th className="px-4 py-3">Category ID</th> */}
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Mode</th>
                 <th className="px-4 py-3">Bill</th>
@@ -1425,7 +1425,7 @@ export default function ExpenseSummary(): JSX.Element {
                     <td className="px-4 py-3">{(page - 1) * perPage + idx + 1}</td>
                     <td className="px-4 py-3">{r.date ? new Date(r.date).toLocaleString() : "—"}</td>
                     <td className="px-4 py-3">{r.category_name ?? "—"}</td>
-                    <td className="px-4 py-3">{r.category_id ?? "—"}</td>
+                    {/* <td className="px-4 py-3">{r.category_id ?? "—"}</td> */}
                     <td className="px-4 py-3">{formatCurrency(r.amount)}</td>
                     <td className="px-4 py-3">{r.mode ?? "—"}</td>
                     <td className="px-4 py-3 font-medium">{r.vendor_name ?? "—"}</td>
