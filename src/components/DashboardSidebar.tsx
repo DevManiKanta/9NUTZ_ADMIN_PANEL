@@ -1,5 +1,5 @@
 
-// import React, { useState } from "react";
+// import React, { useState, useEffect } from "react";
 // import { Link, useLocation } from "react-router-dom";
 // import { cn } from "@/lib/utils";
 // import {
@@ -17,6 +17,8 @@
 //   ChevronDown,
 // } from "lucide-react";
 // // import DashboardHeader from "./DashboardHeader";
+// import { useSelector } from "react-redux";
+// import { IMAGES } from "@/assets/Images";
 
 // interface SidebarProps {
 //   isCollapsed: boolean;
@@ -32,17 +34,18 @@
 //   { id: "StockVariation", label: "Expenses Summary", path: "/ExpenseSummary", icon: Repeat },
 //   { id: "routemap", label: "Pos Details", path: "/routemap", icon: Map },
 //   { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
-//  { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
-//  { id: "BannersPage", label: "Banners", path: "/BannersPage", icon: Map },
+//   { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
+//   { id: "BannersPage", label: "Banners", path: "/BannersPage", icon: Map },
 // ];
 
 // const settingsChildren = [
 //   { id: "sku-list", label: "GST", path: "/sku/list" },
 //   { id: "sku-movement", label: "Vendor Management", path: "/sku/movement" },
 //   { id: "sku-create", label: "Inventory Management", path: "/sku/sku" },
+//   { id: "sku-create", label: "Site Settings", path: "/AdminProfilepage" },
 // ];
 
-//  export  const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
+// export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
 //   const location = useLocation();
 //   const pathname = location.pathname.toLowerCase();
 //   const locState = (location.state as any) ?? {};
@@ -51,6 +54,19 @@
 //   const [settingsOpen, setSettingsOpen] = useState<boolean>(() => {
 //     return settingsChildren.some((c) => pathname.startsWith(c.path.toLowerCase()));
 //   });
+
+//   // --- NEW: read site settings from redux slice (no API call here) ---
+//   // Ensure reducer is mounted under 'sitesettings' in your store.
+//   const settings = useSelector((state: any) => state.sitesettings || {});
+//   // Pick a "full name" from common keys returned by server
+//   const fullNameFromApi =settings?.site_name 
+//   // If fullNameFromApi is empty, fallback to "9NUTZ"
+//   const displayTitle = fullNameFromApi?.toString().trim() ? fullNameFromApi.toString().trim() : "9NUTZ";
+    
+//   useEffect(() => {
+//     // keep settingsOpen in sync when path changes
+//     setSettingsOpen(settingsChildren.some((c) => pathname.startsWith(c.path.toLowerCase())));
+//   }, [pathname]);
 
 //   const computeActive = (item: { id: string; path: string }) => {
 //     const p = (item.path || "").toLowerCase();
@@ -76,14 +92,15 @@
 //         isCollapsed ? "w-16" : "w-64"
 //       )}
 //     >
-//       <div className="h-16 flex items-center justify-between px-4 border-b border-green-300 flex-shrink-0">
+//       <div className="h-16 flex items-center justify-between px-4  flex-shrink-0">
 //         {!isCollapsed && (
 //           <div className="flex flex-col gap-1">
-//             <h1 className="text-md font-semibold text-green-900 leading-none">9NUTZ</h1>
-//             <p className="text-xs text-green-800">A Healthy Alternative</p>
+//             {/* replaced hard-coded 9NUTZ with value from settings slice */}
+//             {/* <h1 className="text-md font-semibold text-green-900 leading-none">{displayTitle}</h1> */}
+//                <img src={settings.logo_url} alt="logo" className="h-20 w-20" />
+//             {/* <p className="text-xs text-green-800">A Healthy Alternative</p> */}
 //           </div>
 //         )}
-
 //         <button
 //           onClick={onToggle}
 //           className="p-2 rounded-lg hover:bg-amber-200 transition-colors"
@@ -205,8 +222,9 @@
 //   );
 // };
 
+// export default DashboardSidebar;
 
-// src/components/DashboardSidebar.tsx
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -250,6 +268,7 @@ const settingsChildren = [
   { id: "sku-list", label: "GST", path: "/sku/list" },
   { id: "sku-movement", label: "Vendor Management", path: "/sku/movement" },
   { id: "sku-create", label: "Inventory Management", path: "/sku/sku" },
+  { id: "sku-create", label: "Site Settings", path: "/AdminProfilepage" },
 ];
 
 export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
@@ -266,10 +285,10 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
   // Ensure reducer is mounted under 'sitesettings' in your store.
   const settings = useSelector((state: any) => state.sitesettings || {});
   // Pick a "full name" from common keys returned by server
-  const fullNameFromApi =settings?.site_name 
+  const fullNameFromApi = settings?.site_name;
   // If fullNameFromApi is empty, fallback to "9NUTZ"
   const displayTitle = fullNameFromApi?.toString().trim() ? fullNameFromApi.toString().trim() : "9NUTZ";
-    
+
   useEffect(() => {
     // keep settingsOpen in sync when path changes
     setSettingsOpen(settingsChildren.some((c) => pathname.startsWith(c.path.toLowerCase())));
@@ -292,6 +311,9 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
     return pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p);
   });
 
+  // CONSTANT LOGO SIZE (edit here if you want a different fixed size)
+  const LOGO_SIZE_PX = 56; // width & height in pixels
+
   return (
     <div
       className={cn(
@@ -301,10 +323,20 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
     >
       <div className="h-16 flex items-center justify-between px-4  flex-shrink-0">
         {!isCollapsed && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 items-start">
             {/* replaced hard-coded 9NUTZ with value from settings slice */}
             {/* <h1 className="text-md font-semibold text-green-900 leading-none">{displayTitle}</h1> */}
-               <img src={settings.logo_url} alt="logo" className="h-20 w-20" />
+            {/* Logo: fixed width & height, object-contain to avoid distortion */}
+            <img
+              src={settings.logo_url}
+              alt={displayTitle}
+              width={LOGO_SIZE_PX}
+              height={LOGO_SIZE_PX}
+              // Tailwind classes for layout + object-fit
+              className="w-[56px] h-[56px] min-w-[56px] min-h-[56px] object-contain rounded-sm"
+              // If logo_url is empty, keep aria-hidden so screen readers don't announce a broken image
+              aria-hidden={!settings.logo_url}
+            />
             {/* <p className="text-xs text-green-800">A Healthy Alternative</p> */}
           </div>
         )}
@@ -430,6 +462,7 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
 };
 
 export default DashboardSidebar;
+
 
 
 
