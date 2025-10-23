@@ -15,7 +15,8 @@
 // src/redux/store.ts
 import { configureStore } from "@reduxjs/toolkit";
 import productsReducer from "./slices/productsSlice";
-import sitesettingsReducer from "./slices/sitesettings"; // <- ensure this file exists and is TS
+import sitesettingsReducer from "./slices/sitesettings"; 
+import salesSliceReducer from "./slices/SalesSlice"
 
 export const store = configureStore({
   reducer: {
@@ -23,6 +24,7 @@ export const store = configureStore({
     // IMPORTANT: keep this key as `sitesettings` to match your selectors like
     // useSelector((state) => state.sitesettings)
     sitesettings: sitesettingsReducer,
+    sales: salesSliceReducer,
   },
   // configureStore already includes redux-thunk and devTools by default
   devTools: process.env.NODE_ENV !== "production",

@@ -32,6 +32,7 @@
 //   discount_amount: "",
 //   discount_price: "",
 //   image: "",
+//   description:""
 // };
 
 // export default function Products(): JSX.Element {
@@ -197,6 +198,7 @@
 //     if (payload.grams !== undefined) fd.append("grams", String(payload.grams));
 //     if (payload.category !== undefined && payload.category !== null) fd.append("category", String(payload.category));
 //     if (file) fd.append("image", file);
+//     if (payload.decsription !== undefined) fd.append("decsription", String(payload.decsription));
 //     const res = await api.post(`${basePath}/add`, fd, { headers: { "Content-Type": "multipart/form-data" } });
 //     return res.data ?? res;
 //   };
@@ -251,6 +253,7 @@
 //       discount_amount: safeTrim(p.discount_amount) ?? String(p.discount_amount ?? ""),
 //       discount_price: safeTrim(p.discount_price) ?? String(p.discount_price ?? ""),
 //       image: (p.image_url ?? p.image ?? "") as string,
+//       description:safeTrim(p.name) ?? String(p.name ?? ""),
 //     });
 //     setImageFile(null);
 //     setIsDrawerOpen(true);
@@ -319,6 +322,7 @@
 //     const discount_price_trimmed = safeTrim(form.discount_price);
 //     const discount_amount_trimmed = safeTrim(form.discount_amount);
 //     const grams_trimmed = safeTrim(form.grams);
+//     const descriptionTrimmed = safeTrim(form.description) ?? "";
 
 //     let categoryToSend: string | number | undefined = undefined;
 //     if (form.category !== "" && form.category != null) {
@@ -347,13 +351,10 @@
 //       try {
 //         const res = await updateProductApi(editingId, payload, imageFile);
 //         const body = res.data ?? res;
-//         // handle server-level failure payload like {status:false,message:"..."}
 //         if (body && body.status === false) {
 //           const msg = body.message ?? "Update failed";
-//           // map to image field if message references it
 //           if (/image/i.test(String(msg))) setErrors((prev) => ({ ...prev, image: String(msg) }));
 //           toast.error(String(msg));
-//           // rollback
 //           setProducts(prev);
 //           setIsSubmitting(false);
 //           return;
@@ -374,7 +375,6 @@
 //         setProducts(prev); // rollback
 //         const rdata = err?.response?.data;
 //         if (rdata && typeof rdata === "object") {
-//           // server validation map
 //           if (rdata.errors && typeof rdata.errors === "object") {
 //             const mapped: Partial<Record<keyof typeof defaultForm, string>> = {};
 //             Object.keys(rdata.errors).forEach((k) => {
@@ -384,7 +384,6 @@
 //             setErrors((p) => ({ ...p, ...mapped }));
 //             toast.error("Fix validation errors");
 //           } else if (rdata.status === false && rdata.message) {
-//             // server returned {status:false, message:"..."}
 //             const msg = String(rdata.message);
 //             if (/image/i.test(msg)) setErrors((prev) => ({ ...prev, image: msg }));
 //             toast.error(msg);
@@ -410,10 +409,8 @@
 
 //         if (body && body.status === false) {
 //           const msg = body.message ?? "Add failed";
-//           // map to image when indicated
 //           if (/image/i.test(String(msg))) setErrors((prev) => ({ ...prev, image: String(msg) }));
 //           toast.error(String(msg));
-//           // remove temp item
 //           setProducts((cur) => cur.filter((p) => String(p.id) !== String(tempId)));
 //           setIsSubmitting(false);
 //           return;
@@ -422,7 +419,6 @@
 //         const createdRaw = body?.data ?? body?.product ?? body;
 //         const created = normalizeProduct(createdRaw);
 
-//         // replace temp with created (or ensure created is at top)
 //         setProducts((cur) => {
 //           const withoutTemp = cur.filter((p) => String(p.id) !== String(tempId));
 //           return [created, ...withoutTemp];
@@ -433,7 +429,6 @@
 //         resetForm();
 //       } catch (err: any) {
 //         console.error("handleSubmit (create) error:", err, err?.response?.data);
-//         // remove temp
 //         setProducts((cur) => cur.filter((p) => String(p.id) !== String(tempId)));
 //         const rdata = err?.response?.data;
 //         if (rdata && typeof rdata === "object") {
@@ -478,7 +473,6 @@
 //       const res = await deleteProductApi(confirmDeleteId);
 //       const body = res.data ?? res;
 //       if (body && body.status === false) {
-//         // server returned explicit failure
 //         toast.error(body.message ?? "Delete failed");
 //         setProducts(prev);
 //       } else {
@@ -489,7 +483,6 @@
 //       console.error("Delete error:", err, err?.response?.data);
 //       const message = err?.response?.data?.message ?? err?.message ?? "Failed to delete product";
 //       toast.error(message);
-//       // rollback
 //       setProducts(prev);
 //     } finally {
 //       setIsDeleting(false);
@@ -523,8 +516,9 @@
 //   return (
 //     <>
 //       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-//       <div className="max-w-6xl mx-auto">
-//         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+//       {/* full width container */}
+//       <div className="w-full px-4 md:px-6 lg:px-8">
+//         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 w-full">
 //           <div>
 //             <h1 className="text-2xl sm:text-3xl font-bold">Products</h1>
 //           </div>
@@ -539,98 +533,125 @@
 //           </div>
 //         </div>
 
-//         <Card className="overflow-x-auto shadow-sm ">
-//           <table className="min-w-full divide-y divide-slate-200">
-//             <thead className="bg-slate-50">
-//               <tr>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">S.no</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Image</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Name</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Category (id)</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Grams</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Price</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Discount</th>
-//                 <th className="px-4 py-2 text-left text-sm font-medium">Stock</th>
-//                 <th className="px-4 py-2 text-right text-sm font-medium">Actions</th>
-//               </tr>
-//             </thead>
-
-//             <tbody className="bg-white divide-y divide-slate-100">
-//               {isLoading ? (
+//         <Card className="shadow-sm w-full">
+//           {/* responsive wrapper */}
+//           <div className="w-full overflow-x-auto">
+//             <table className="w-full min-w-[700px] md:min-w-full divide-y divide-slate-200">
+//               <thead className="bg-slate-50">
 //                 <tr>
-//                   <td colSpan={9} className="p-6 text-center">
-//                     <div className="flex flex-col items-center gap-2">
-//                       <div className="h-9 w-9 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-//                       <div className="text-sm text-slate-600">Loading products…</div>
-//                     </div>
-//                   </td>
+//                   <th className="px-4 py-3 text-left text-sm font-medium w-12">S.no</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium w-20">Image</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium hidden sm:table-cell">Category (id)</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium hidden md:table-cell">Grams</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium">Price</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium hidden lg:table-cell">Discount</th>
+//                   <th className="px-4 py-3 text-left text-sm font-medium hidden lg:table-cell">Stock</th>
+//                   <th className="px-4 py-3 text-right text-sm font-medium w-36">Actions</th>
 //                 </tr>
-//               ) : products.length === 0 ? (
-//                 <tr>
-//                   <td colSpan={9} className="p-6 text-center text-slate-500">
-//                     No products found.
-//                   </td>
-//                 </tr>
-//               ) : (
-//                 products.map((p, i) => (
-//                   <tr key={String(p.id)}>
-//                     <td className="px-4 py-3 text-sm">{i + 1}</td>
-//                     <td className="px-4 py-3">
-//                       <img
-//   src={resolveImage(p)}
-//   alt={p.name ?? "product"}
-//   className="w-14 h-14 object-cover rounded-full"
-//   onError={(e) => {
-//     (e.currentTarget as HTMLImageElement).onerror = null;
-//     (e.currentTarget as HTMLImageElement).src = IMAGES.DummyImage;
-//   }}
-// />
+//               </thead>
 
-//                     </td>
-
-//                     <td className="px-4 py-3">
-//                       <div className="text-sm font-medium">{p.name}</div>
-//                       <div className="text-xs text-slate-400">{p.slug ?? ""}</div>
-//                     </td>
-
-//                     <td className="px-4 py-3 text-sm text-slate-600">
-//                       {p.category && typeof p.category === "object"
-//                         ? `${(p.category as any).name ?? "-"} (${(p.category as any).id ?? "-"})`
-//                         : `${p.category ?? "-"}`}
-//                     </td>
-
-//                     <td className="px-4 py-3 text-sm">{p.grams ?? "-"}</td>
-
-//                     <td className="px-4 py-3 text-sm">₹ {p.price}</td>
-
-//                     <td className="px-4 py-3 text-sm">
-//                       <div>{p.discount_price ? `₹ ${p.discount_price}` : "-"}</div>
-//                       {p.discount_amount && <div className="text-xs text-slate-400">Saved {p.discount_amount}</div>}
-//                     </td>
-
-//                     <td className="px-4 py-3 text-sm">{p.stock ?? "-"}</td>
-
-//                     <td className="px-4 py-3 text-sm text-right">
-//                       <div className="flex items-center justify-end gap-2">
-//                         {/* <Button variant="outline" className="px-2 py-1 text-xs" onClick={() => openView(p)}>
-//                           <Eye className="w-4 h-4 mr-1" /> View
-//                         </Button> */}
-//                         <Button variant="ghost" className="p-2" onClick={() => openEditDrawer(p)}>
-//                           <Edit3 className="w-4 h-4" />
-//                         </Button>
-//                         <Button variant="destructive" className="p-2" onClick={() => askDelete(p.id)}>
-//                           <Trash2 className="w-4 h-4" />
-//                         </Button>
+//               <tbody className="bg-white divide-y divide-slate-100">
+//                 {isLoading ? (
+//                   <tr>
+//                     <td colSpan={9} className="p-6 text-center">
+//                       <div className="flex flex-col items-center gap-2">
+//                         <div className="h-9 w-9 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+//                         <div className="text-sm text-slate-600">Loading products…</div>
 //                       </div>
 //                     </td>
 //                   </tr>
-//                 ))
-//               )}
-//             </tbody>
-//           </table>
-//         </Card>
+//                 ) : products.length === 0 ? (
+//                   <tr>
+//                     <td colSpan={9} className="p-6 text-center text-slate-500">
+//                       No products found.
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   products.map((p, i) => (
+//                     <tr key={String(p.id)}>
+//                       <td className="px-4 py-3 text-sm align-middle">{i + 1}</td>
 
-//         {/* Pagination removed as requested */}
+//                       <td className="px-4 py-3 align-middle">
+//                         <div className="w-12 h-12 rounded-full overflow-hidden bg-white border">
+//                           <img
+//                             src={resolveImage(p)}
+//                             alt={p.name ?? "product"}
+//                             className="object-cover w-full h-full"
+//                             onError={(e) => {
+//                               (e.currentTarget as HTMLImageElement).onerror = null;
+//                               (e.currentTarget as HTMLImageElement).src = IMAGES.DummyImage;
+//                             }}
+//                           />
+//                         </div>
+//                       </td>
+
+//                       <td className="px-4 py-3 align-middle">
+//                         <div className="text-sm font-medium truncate max-w-[220px] sm:max-w-none">{p.name}</div>
+//                         <div className="text-xs text-slate-400 mt-1">{p.slug ?? ""}</div>
+//                       </td>
+
+//                       <td className="px-4 py-3 text-sm text-slate-600 align-middle hidden sm:table-cell">
+//                         {p.category && typeof p.category === "object"
+//                           ? `${(p.category as any).name ?? "-"} (${(p.category as any).id ?? "-"})`
+//                           : `${p.category ?? "-"}`}
+//                       </td>
+
+//                       <td className="px-4 py-3 text-sm align-middle hidden md:table-cell">{p.grams ?? "-"}</td>
+
+//                       <td className="px-4 py-3 text-sm align-middle">₹ {p.price}</td>
+
+//                       <td className="px-4 py-3 text-sm align-middle hidden lg:table-cell">
+//                         <div>{p.discount_price ? `₹ ${p.discount_price}` : "-"}</div>
+//                         {p.discount_amount && <div className="text-xs text-slate-400">Saved {p.discount_amount}</div>}
+//                       </td>
+
+//                       <td className="px-4 py-3 text-sm align-middle hidden lg:table-cell">{p.stock ?? "-"}</td>
+
+//                       <td className="px-4 py-3 text-sm text-right align-middle">
+//                         <div className="flex items-center justify-end gap-2">
+//                           <button
+//                             onClick={() => openEditDrawer(p)}
+//                             title="Edit"
+//                             className="inline-flex items-center justify-center p-2 rounded border hover:bg-slate-50"
+//                             aria-label={`Edit ${p.name}`}
+//                           >
+//                             <Edit3 className="w-4 h-4" />
+//                           </button>
+
+//                           <button
+//                             onClick={() => askDelete(p.id)}
+//                             title="Delete"
+//                             className="inline-flex items-center justify-center p-2 rounded border hover:bg-slate-50"
+//                             aria-label={`Delete ${p.name}`}
+//                           >
+//                             <Trash2 className="w-4 h-4" />
+//                           </button>
+
+//                           {/* optionally view on very small screens */}
+//                           <button
+//                             onClick={() => openView(p)}
+//                             title="View"
+//                             className="inline-flex items-center justify-center p-2 rounded border hover:bg-slate-50 md:hidden"
+//                             aria-label={`View ${p.name}`}
+//                           >
+//                             <Eye className="w-4 h-4" />
+//                           </button>
+//                         </div>
+//                       </td>
+//                     </tr>
+//                   ))
+//                 )}
+//               </tbody>
+//             </table>
+//           </div>
+
+//           {/* footer: summary */}
+//           <div className="px-4 py-3 border-t flex items-center justify-between">
+//             <div className="text-sm text-slate-600">Showing {products.length} products</div>
+//             <div className="text-sm text-slate-800 font-medium">Total products: {products.length}</div>
+//           </div>
+//         </Card>
 
 //         {/* ----------- Add / Edit Drawer ----------- */}
 //         {isDrawerOpen && (
@@ -652,9 +673,8 @@
 //               <div className="flex items-start justify-between p-6 border-b">
 //                 <div>
 //                   <h3 className="text-xl font-semibold">{isEditMode ? "Edit Product" : "Add Product"}</h3>
-//                   <p className="text-sm text-slate-500">{isEditMode ? "Update product details" : "Fill in product details"}</p>
+//                   {/* <p className="text-sm text-slate-500">{isEditMode ? "Update product details" : "Fill in product details"}</p> */}
 //                 </div>
-
 //                 <button
 //                   onClick={() => {
 //                     setIsDrawerOpen(false);
@@ -668,10 +688,9 @@
 //               </div>
 
 //               <div className="p-6">
-//                 <div className="mb-4">
+//                 {/* <div className="mb-4">
 //                   <img src={form.image || IMAGES.DummyImage} alt="Preview" className="w-full h-44 object-cover rounded-md border" />
-//                 </div>
-
+//                 </div> */}
 //                 <form onSubmit={handleSubmit} className="space-y-4">
 //                   <div>
 //                     <label className="block text-sm font-medium mb-1">
@@ -728,7 +747,19 @@
 //                       <input value={form.discount_price} onChange={(e) => setForm((f) => ({ ...f, discount_price: e.target.value }))} className="block w-full border rounded-md p-2" placeholder="800.00" />
 //                     </div>
 //                   </div>
-
+//                      <div>
+//                     <label className="block text-sm font-medium mb-1">
+//                       Description<span className="text-red-500">*</span>
+//                     </label>
+//                     <input
+//                       ref={firstInputRef}
+//                       value={form.description}
+//                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+//                       className={`block w-full border rounded-md p-2 focus:outline-none focus:ring ${errors.name ? "border-red-400" : "border-slate-200"}`}
+//                       placeholder="e.g. Description"
+//                     />
+//                     {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+//                   </div>
 //                   <div>
 //                     <label className="block text-sm font-medium mb-1">Upload Image</label>
 //                     <input type="file" accept="image/*" onChange={handleImageChange} className="block w-full text-sm" />
@@ -839,6 +870,8 @@
 // }
 
 
+"use client";
+
 import React, { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -872,6 +905,7 @@ const defaultForm = {
   discount_amount: "",
   discount_price: "",
   image: "",
+  description: "",
 };
 
 export default function Products(): JSX.Element {
@@ -900,6 +934,7 @@ export default function Products(): JSX.Element {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const descInputRef = useRef<HTMLInputElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const viewDrawerRef = useRef<HTMLDivElement | null>(null);
 
@@ -1028,6 +1063,7 @@ export default function Products(): JSX.Element {
     }
   };
 
+  // create: append description correctly
   const createProductApi = async (payload: Partial<Product>, file?: File | null) => {
     const fd = new FormData();
     if (payload.name !== undefined) fd.append("name", String(payload.name));
@@ -1036,11 +1072,13 @@ export default function Products(): JSX.Element {
     if (payload.discount_amount !== undefined) fd.append("discount_amount", String(payload.discount_amount));
     if (payload.grams !== undefined) fd.append("grams", String(payload.grams));
     if (payload.category !== undefined && payload.category !== null) fd.append("category", String(payload.category));
+    if ((payload as any).description !== undefined) fd.append("description", String((payload as any).description));
     if (file) fd.append("image", file);
     const res = await api.post(`${basePath}/add`, fd, { headers: { "Content-Type": "multipart/form-data" } });
     return res.data ?? res;
   };
 
+  // update: append description as well
   const updateProductApi = async (id: string | number, payload: Partial<Product>, file?: File | null) => {
     const fd = new FormData();
     if (payload.name !== undefined) fd.append("name", String(payload.name));
@@ -1049,6 +1087,7 @@ export default function Products(): JSX.Element {
     if (payload.discount_amount !== undefined) fd.append("discount_amount", String(payload.discount_amount));
     if (payload.grams !== undefined) fd.append("grams", String(payload.grams));
     if (payload.category !== undefined && payload.category !== null) fd.append("category", String(payload.category));
+    if ((payload as any).description !== undefined) fd.append("description", String((payload as any).description));
     if (file) fd.append("image", file);
     const res = await api.post(`${basePath}/update/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
     return res.data ?? res;
@@ -1091,6 +1130,8 @@ export default function Products(): JSX.Element {
       discount_amount: safeTrim(p.discount_amount) ?? String(p.discount_amount ?? ""),
       discount_price: safeTrim(p.discount_price) ?? String(p.discount_price ?? ""),
       image: (p.image_url ?? p.image ?? "") as string,
+      // load actual description from product (if present)
+      description: safeTrim((p as any).description ?? (p as any).dscription ?? "") ?? "",
     });
     setImageFile(null);
     setIsDrawerOpen(true);
@@ -1159,6 +1200,7 @@ export default function Products(): JSX.Element {
     const discount_price_trimmed = safeTrim(form.discount_price);
     const discount_amount_trimmed = safeTrim(form.discount_amount);
     const grams_trimmed = safeTrim(form.grams);
+    const descriptionTrimmed = safeTrim(form.description) ?? "";
 
     let categoryToSend: string | number | undefined = undefined;
     if (form.category !== "" && form.category != null) {
@@ -1174,6 +1216,8 @@ export default function Products(): JSX.Element {
       discount_amount: discount_amount_trimmed,
       grams: grams_trimmed,
       category: categoryToSend as any,
+      // include description if present (this is the important fix)
+      ...(descriptionTrimmed ? { description: descriptionTrimmed } : {}),
     };
 
     setIsSubmitting(true);
@@ -1421,7 +1465,6 @@ export default function Products(): JSX.Element {
                           />
                         </div>
                       </td>
-
                       <td className="px-4 py-3 align-middle">
                         <div className="text-sm font-medium truncate max-w-[220px] sm:max-w-none">{p.name}</div>
                         <div className="text-xs text-slate-400 mt-1">{p.slug ?? ""}</div>
@@ -1429,7 +1472,7 @@ export default function Products(): JSX.Element {
 
                       <td className="px-4 py-3 text-sm text-slate-600 align-middle hidden sm:table-cell">
                         {p.category && typeof p.category === "object"
-                          ? `${(p.category as any).name ?? "-"} (${(p.category as any).id ?? "-"})`
+                          ? `${(p.category as any).name ?? "-"}`
                           : `${p.category ?? "-"}`}
                       </td>
 
@@ -1509,9 +1552,7 @@ export default function Products(): JSX.Element {
               <div className="flex items-start justify-between p-6 border-b">
                 <div>
                   <h3 className="text-xl font-semibold">{isEditMode ? "Edit Product" : "Add Product"}</h3>
-                  <p className="text-sm text-slate-500">{isEditMode ? "Update product details" : "Fill in product details"}</p>
                 </div>
-
                 <button
                   onClick={() => {
                     setIsDrawerOpen(false);
@@ -1525,10 +1566,6 @@ export default function Products(): JSX.Element {
               </div>
 
               <div className="p-6">
-                <div className="mb-4">
-                  <img src={form.image || IMAGES.DummyImage} alt="Preview" className="w-full h-44 object-cover rounded-md border" />
-                </div>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
@@ -1584,6 +1621,20 @@ export default function Products(): JSX.Element {
                       <label className="block text-sm font-medium mb-1">Discount Price</label>
                       <input value={form.discount_price} onChange={(e) => setForm((f) => ({ ...f, discount_price: e.target.value }))} className="block w-full border rounded-md p-2" placeholder="800.00" />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Description<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      ref={descInputRef}
+                      value={form.description}
+                      onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                      className={`block w-full border rounded-md p-2 focus:outline-none focus:ring ${errors.description ? "border-red-400" : "border-slate-200"}`}
+                      placeholder="e.g. Description"
+                    />
+                    {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
                   </div>
 
                   <div>
@@ -1694,6 +1745,7 @@ export default function Products(): JSX.Element {
     </>
   );
 }
+
 
 
 
