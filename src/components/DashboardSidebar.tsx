@@ -267,7 +267,6 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
   const settings = useSelector((state: any) => state.sitesettings || {});
   // Pick a "full name" from common keys returned by server
   const fullNameFromApi =settings?.site_name 
-
   // If fullNameFromApi is empty, fallback to "9NUTZ"
   const displayTitle = fullNameFromApi?.toString().trim() ? fullNameFromApi.toString().trim() : "9NUTZ";
     
@@ -300,15 +299,15 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
         isCollapsed ? "w-16" : "w-64"
       )}
     >
-      <div className="h-16 flex items-center justify-between px-4 border-b border-green-300 flex-shrink-0">
+      <div className="h-16 flex items-center justify-between px-4  flex-shrink-0">
         {!isCollapsed && (
           <div className="flex flex-col gap-1">
             {/* replaced hard-coded 9NUTZ with value from settings slice */}
-            <h1 className="text-md font-semibold text-green-900 leading-none">{displayTitle}</h1>
+            {/* <h1 className="text-md font-semibold text-green-900 leading-none">{displayTitle}</h1> */}
+               <img src={settings.logo_url} alt="logo" className="h-20 w-20" />
             {/* <p className="text-xs text-green-800">A Healthy Alternative</p> */}
           </div>
         )}
-
         <button
           onClick={onToggle}
           className="p-2 rounded-lg hover:bg-amber-200 transition-colors"

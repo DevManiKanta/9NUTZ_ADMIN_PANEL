@@ -145,13 +145,8 @@ const Dashboard: React.FC = () => {
     }
     // otherwise nothing special — filteredOrders recomputes via hooks
   };
-
-  // HERE: keep the original chart components, but cast them to any so we can safely pass filteredOrders/toDate.
-  // If your WeeklyChart/YearlyChart already accept props, they'll use the filtered data.
-  // If they do not, the extra props are harmless.
   const Weekly = WeeklyChart as unknown as React.FC<any>;
   const Yearly = YearlyChart as unknown as React.FC<any>;
-
   return (
     <div className="space-y-8">
       <div>

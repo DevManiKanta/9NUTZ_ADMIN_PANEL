@@ -353,17 +353,12 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
 
   // Helpful debug: shows raw slice content in console so you can inspect when it's empty.
   useEffect(() => {
-    // eslint-disable-next-line no-console
     console.debug("[DashboardHeader] sitesettings slice:", settings);
     if (!settings || Object.keys(settings).length === 0) {
-      // eslint-disable-next-line no-console
       console.info("[DashboardHeader] sitesettings appears empty — ensure your store mounts the reducer under the key `sitesettings` and the settings thunk has run.");
     }
   }, [settings]);
-
-  // prefer settings.logo_url (from API / slice). fallback to IMAGES.Nutz
   const logoRaw = (settings && (settings.logo_url ?? settings.logo ?? "")) || "";
-
   // Build absolute URL only if needed. We DON'T fetch here.
   const buildLogoUrl = (logo: string) => {
     if (!logo) return "";
@@ -455,20 +450,17 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
       navigate("/login", { replace: true });
     }
   };
-
   const onPlusNavigate = (path: string) => {
     setPlusOpen(false);
     navigate(path);
   };
-
   const avatarInitial = (user?.name ?? user?.username ?? "A").toString().charAt(0).toUpperCase();
-
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
       {/* Left: Logo + Search */}
       <div className="flex items-center gap-4 flex-1 max-w-3xl">
         <div className="w-25 h-10 flex items-center justify-center overflow-hidden">
-          <img
+          {/* <img
             src={logoSrc}
             alt={siteName}
             className="w-full h-full object-contain"
@@ -477,7 +469,8 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
               // final fallback to bundled image
               if (el.src !== IMAGES.Nutz) el.src = IMAGES.Nutz;
             }}
-          />
+          /> */}
+          <h1>{settings.site_name}</h1>
         </div>
 
         {/* Search - kept commented as in original */}

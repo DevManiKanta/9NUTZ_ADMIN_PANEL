@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { IMAGES } from "../../assets/IMAGES";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
+import { useSelector } from "react-redux";
 
 export const LoginForm = () => {
   const [username, setUsername] = useState("");
@@ -17,7 +18,19 @@ export const LoginForm = () => {
 
   const navigate = useNavigate();
   const { login } = useAuth();
+    const settings = useSelector((state: RootState | any) => (state as any).sitesettings || {});
 
+     useEffect(() => {
+        // eslint-disable-next-line no-console
+        console.debug("[DashboardHeader] sitesettings slice:", settings);
+        if (!settings || Object.keys(settings).length === 0) {
+          // eslint-disable-next-line no-console
+          console.info("[DashboardHeader] sitesettings appears empty — ensure your store mounts the reducer under the key `sitesettings` and the settings thunk has run.");
+        }
+      }, [settings]);
+    
+      // prefer settings.logo_url (from API / slice). fallback to IMAGES.Nutz
+      const logoRaw = (settings && (settings.logo_url ?? settings.logo ?? "")) || "";
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -52,12 +65,12 @@ export const LoginForm = () => {
           <Card className="w-full h-[650px] backdrop-blur-md bg-white flex flex-col justify-center">
             <CardHeader className="text-center space-y-6">
               <img
-                src={IMAGES.Nutz}
+                src={logoRaw}
                 alt="Retail Logo"
-                className="mx-auto w-25 h-20"
+                className="mx-auto w-30 h-20"
               />
             </CardHeader>
-
+             <h1 className="text-2xl font-semibold text-center">Login</h1>
             <CardContent className="flex-grow flex flex-col justify-center">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username input */}
