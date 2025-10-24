@@ -794,7 +794,7 @@ const SkuMovement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+ <div className="p-2 w-full">
       <Toaster position="top-right" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">

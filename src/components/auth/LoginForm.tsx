@@ -186,7 +186,7 @@ export const LoginForm: React.FC = () => {
   const rawLogo = (settings && (settings.logo_url ?? settings.logo_url ?? "")) || "";
   // Build a safe image source - accept absolute http(s) or protocol-relative URLs; otherwise fallback to local image
   const isRemoteLogo = /^(https?:\/\/|\/\/)/i.test(rawLogo.trim());
-  const logoSrc = isRemoteLogo ? rawLogo.trim() : IMAGES.Nutz || "/images/default-logo.png";
+  const logoSrc = isRemoteLogo ? rawLogo.trim() : rawLogo.trim()|| "/images/default-logo.png";
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const img = e.currentTarget;
@@ -233,18 +233,30 @@ export const LoginForm: React.FC = () => {
         <div className="relative z-10 w-full max-w-lg h-screen flex items-center p-6">
           <Card className="w-full h-[650px] backdrop-blur-md bg-white flex flex-col justify-center">
             <CardHeader className="text-center space-y-6">
-              <img
+              {/* <img
                 src={logoSrc}
                 alt="Retail Logo"
                 onError={handleImageError}
                 className="mx-auto w-32 h-20 object-contain"
                 // Add loading attribute for better UX
                 loading="lazy"
-              />
+              /> */}
+                 <div className="flex items-center justify-center w-full h-full">
+  <img
+    src={
+      isRemoteLogo && rawLogo.trim()
+        ? rawLogo.trim()
+        : "https://via.placeholder.com/120x120.png?text=Logo"
+    }
+    alt="Site Logo"
+    className="h-20 w-25 object-contain rounded-lg shadow-lg border border-gray-200"
+  />
+</div>
+
             </CardHeader>
 
             <h1 className="text-2xl font-semibold text-center">Login</h1>
-
+             <h1 ></h1>
             <CardContent className="flex-grow flex flex-col justify-center">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username input */}
@@ -297,9 +309,9 @@ export const LoginForm: React.FC = () => {
                 </Button>
 
                 <div className="text-sm text-center">
-                  <Link to="/forgot-password" className="text-primary underline">
+                  {/* <Link to="/forgot-password" className="text-primary underline">
                     Forgot password?
-                  </Link>
+                  </Link> */}
                 </div>
               </form>
             </CardContent>

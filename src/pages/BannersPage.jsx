@@ -728,7 +728,7 @@ export default function BannersPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Banners</h1>
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={refresh}
             disabled={loading || busy}
             className="inline-flex items-center gap-2 px-3 py-2 border rounded bg-white hover:bg-gray-50"
@@ -736,12 +736,12 @@ export default function BannersPage() {
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Refresh
-          </button>
+          </button> */}
 
           <button
             onClick={openAdd}
             disabled={busy}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700"
           >
             <PlusCircle className="w-4 h-4" />
             Add Banner

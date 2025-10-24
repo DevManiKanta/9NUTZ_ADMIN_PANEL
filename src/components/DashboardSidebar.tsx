@@ -1,4 +1,6 @@
 
+
+
 // import React, { useState, useEffect } from "react";
 // import { Link, useLocation } from "react-router-dom";
 // import { cn } from "@/lib/utils";
@@ -25,24 +27,26 @@
 //   onToggle: () => void;
 // }
 
+// /**
+//  * Primary navigation items.
+//  * Inventory Management and Vendor Management moved here from Settings as requested.
+//  */
 // const navigationItems = [
 //   { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: Home },
 //   { id: "products", label: "Products", path: "/products", icon: Package },
-//   { id: "customerSaleHistory", label: "Category", path: "/categorywisesale", icon: BarChart3 },
-//   { id: "franchise", label: "Franchise", path: "/franchise", icon: Building2 },
-//   { id: "customer", label: "Point of Sale", path: "/Customer", icon: Users },
-//   { id: "StockVariation", label: "Expenses Summary", path: "/ExpenseSummary", icon: Repeat },
-//   { id: "routemap", label: "Pos Details", path: "/routemap", icon: Map },
-//   { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
-//   { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
-//   { id: "BannersPage", label: "Banners", path: "/BannersPage", icon: Map },
+//   { id: "category", label: "Category", path: "/category", icon: BarChart3 },
+//   { id: "point-of-sale", label: "Point of Sale", path: "/point-of-sale", icon: Users },
+//   { id: "expenses-summary", label: "ExpensesSummary", path: "/expensesummary", icon: Repeat },
+//   { id: "purchase-details", label: "Purchase Details", path: "/purchase-details", icon: Map },
+//   { id: "orders", label: "Orders", path: "/orders", icon: Map },
+//   { id: "banners", label: "Banners", path: "/BannersPage", icon: Map },
+//   { id: "inventory-management", label: "Inventory Management", path: "/sku/Inventory-Management", icon: ClipboardList },
+//   { id: "vendor-management", label: "Vendor Management", path: "/sku/vendor-Management", icon: Building2 },
 // ];
 
 // const settingsChildren = [
-//   { id: "sku-list", label: "GST", path: "/sku/list" },
-//   { id: "sku-movement", label: "Vendor Management", path: "/sku/movement" },
-//   { id: "sku-create", label: "Inventory Management", path: "/sku/sku" },
-//   { id: "sku-create", label: "Site Settings", path: "/AdminProfilepage" },
+//   { id: "gst", label: "GST", path: "/sku/list" },
+//   { id: "site-settings", label: "Site Settings", path: "/Site-Settings" },
 // ];
 
 // export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
@@ -59,10 +63,10 @@
 //   // Ensure reducer is mounted under 'sitesettings' in your store.
 //   const settings = useSelector((state: any) => state.sitesettings || {});
 //   // Pick a "full name" from common keys returned by server
-//   const fullNameFromApi =settings?.site_name 
+//   const fullNameFromApi = settings?.site_name;
 //   // If fullNameFromApi is empty, fallback to "9NUTZ"
 //   const displayTitle = fullNameFromApi?.toString().trim() ? fullNameFromApi.toString().trim() : "9NUTZ";
-    
+
 //   useEffect(() => {
 //     // keep settingsOpen in sync when path changes
 //     setSettingsOpen(settingsChildren.some((c) => pathname.startsWith(c.path.toLowerCase())));
@@ -70,7 +74,8 @@
 
 //   const computeActive = (item: { id: string; path: string }) => {
 //     const p = (item.path || "").toLowerCase();
-//     const pathMatches = pathname === p || (p !== "/" && (pathname.startsWith(p + "/") || pathname.startsWith(p)));
+//     const pathMatches =
+//       pathname === p || (p !== "/" && (pathname.startsWith(p + "/") || pathname.startsWith(p)));
 //     if (!pathMatches) return false;
 //     const isComingSoonPath = p === "/commingsoon";
 //     if (isComingSoonPath) {
@@ -85,6 +90,9 @@
 //     return pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p);
 //   });
 
+//   // CONSTANT LOGO SIZE (edit here if you want a different fixed size)
+//   const LOGO_SIZE_PX = 100; // width & height in pixels
+
 //   return (
 //     <div
 //       className={cn(
@@ -94,11 +102,15 @@
 //     >
 //       <div className="h-16 flex items-center justify-between px-4  flex-shrink-0">
 //         {!isCollapsed && (
-//           <div className="flex flex-col gap-1">
-//             {/* replaced hard-coded 9NUTZ with value from settings slice */}
-//             {/* <h1 className="text-md font-semibold text-green-900 leading-none">{displayTitle}</h1> */}
-//                <img src={settings.logo_url} alt="logo" className="h-20 w-20" />
-//             {/* <p className="text-xs text-green-800">A Healthy Alternative</p> */}
+//           <div className="flex flex-col gap-1 items-start">
+//             <img
+//               src={settings.logo_url}
+//               alt={displayTitle}
+//               width={LOGO_SIZE_PX}
+//               height={LOGO_SIZE_PX}
+//               className="w-[186px] h-[56px] min-w-[56px] min-h-[70px] object-contain rounded-sm"
+//               aria-hidden={!settings.logo_url}
+//             />
 //           </div>
 //         )}
 //         <button
@@ -224,7 +236,6 @@
 
 // export default DashboardSidebar;
 
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -241,6 +252,11 @@ import {
   BarChart3,
   Settings,
   ChevronDown,
+  ShoppingCart,
+  Image,
+  FileText,
+  DollarSign,
+  Tag,
 } from "lucide-react";
 // import DashboardHeader from "./DashboardHeader";
 import { useSelector } from "react-redux";
@@ -251,24 +267,26 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
+/**
+ * Primary navigation items.
+ * Icons assigned semantically based on item label.
+ */
 const navigationItems = [
   { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: Home },
   { id: "products", label: "Products", path: "/products", icon: Package },
-  { id: "customerSaleHistory", label: "Category", path: "/category", icon: BarChart3 },
-  // { id: "franchise", label: "Franchise", path: "/franchise", icon: Building2 },
-  { id: "customer", label: "Point of Sale", path: "/Point-of-sale", icon: Users },
-  { id: "StockVariation", label: "Expenses Summary", path: "/ExpenseSummary", icon: Repeat },
-  { id: "routemap", label: "Purchase Details", path: "/purchase-Details", icon: Map },
-  // { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
-  { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
-  { id: "BannersPage", label: "Banners", path: "/BannersPage", icon: Map },
+  { id: "category", label: "Category", path: "/category", icon: Tag },
+  { id: "point-of-sale", label: "Point of Sale", path: "/point-of-sale", icon: Users },
+  { id: "expenses-summary", label: "Expenses Summary", path: "/expensesummary", icon: DollarSign },
+  { id: "purchase-details", label: "Purchase Details", path: "/purchase-details", icon: FileText },
+  { id: "orders", label: "Orders", path: "/orders", icon: ShoppingCart },
+  // { id: "banners", label: "Banners", path: "/BannersPage", icon: Image },
+  { id: "inventory-management", label: "Inventory Management", path: "/sku/Inventory-Management", icon: ClipboardList },
+  { id: "vendor-management", label: "Vendor Management", path: "/sku/vendor-Management", icon: Building2 },
 ];
 
 const settingsChildren = [
-  { id: "sku-list", label: "GST", path: "/sku/list" },
-  { id: "sku-movement", label: "Vendor Management", path: "/sku/movement" },
-  { id: "sku-create", label: "Inventory Management", path: "/sku/sku" },
-  { id: "sku-create", label: "Site Settings", path: "/AdminProfilepage" },
+  // { id: "gst", label: "GST", path: "/sku/list" },
+  { id: "site-settings", label: "Site Settings", path: "/Site-Settings" },
 ];
 
 export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
@@ -296,7 +314,8 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
 
   const computeActive = (item: { id: string; path: string }) => {
     const p = (item.path || "").toLowerCase();
-    const pathMatches = pathname === p || (p !== "/" && (pathname.startsWith(p + "/") || pathname.startsWith(p)));
+    const pathMatches =
+      pathname === p || (p !== "/" && (pathname.startsWith(p + "/") || pathname.startsWith(p)));
     if (!pathMatches) return false;
     const isComingSoonPath = p === "/commingsoon";
     if (isComingSoonPath) {
@@ -312,7 +331,7 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
   });
 
   // CONSTANT LOGO SIZE (edit here if you want a different fixed size)
-  const LOGO_SIZE_PX = 56; // width & height in pixels
+  const LOGO_SIZE_PX = 100; // width & height in pixels
 
   return (
     <div
@@ -324,20 +343,14 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
       <div className="h-16 flex items-center justify-between px-4  flex-shrink-0">
         {!isCollapsed && (
           <div className="flex flex-col gap-1 items-start">
-            {/* replaced hard-coded 9NUTZ with value from settings slice */}
-            {/* <h1 className="text-md font-semibold text-green-900 leading-none">{displayTitle}</h1> */}
-            {/* Logo: fixed width & height, object-contain to avoid distortion */}
             <img
               src={settings.logo_url}
               alt={displayTitle}
               width={LOGO_SIZE_PX}
               height={LOGO_SIZE_PX}
-              // Tailwind classes for layout + object-fit
-              className="w-[56px] h-[56px] min-w-[56px] min-h-[56px] object-contain rounded-sm"
-              // If logo_url is empty, keep aria-hidden so screen readers don't announce a broken image
+              className="w-[186px] h-[56px] min-w-[56px] min-h-[70px] object-contain rounded-sm"
               aria-hidden={!settings.logo_url}
             />
-            {/* <p className="text-xs text-green-800">A Healthy Alternative</p> */}
           </div>
         )}
         <button
@@ -349,24 +362,25 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto sidebar-scroll py-4">
+      <div className="flex-1 overflow-y-auto sidebar-scroll py-4" style={{width:"100%"}}>
         <div className="px-3 mb-4" />
         <nav className="space-y-1 px-2">
           {navigationItems.map((item) => {
             const Icon = item.icon as any;
             const active = computeActive(item);
             const linkState = { sidebarId: item.id };
-
             return (
               <Link
                 key={item.id}
                 to={item.path}
                 state={linkState}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group hover:bg-amber-200",
-                  active && "bg-amber-300 border-l-4 border-amber-600"
-                )}
                 title={isCollapsed ? item.label : undefined}
+                className={cn(
+                  isCollapsed
+                    ? "relative flex flex-col items-center gap-1 px-0 py-3 rounded-lg transition-all duration-200 group hover:bg-amber-200"
+                    : "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group hover:bg-amber-200",
+                  active ? "bg-amber-300 border-l-4 border-amber-600" : ""
+                )}
               >
                 <Icon
                   className={cn(
@@ -379,6 +393,20 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
                     {item.label}
                   </span>
                 )}
+                {isCollapsed && (
+  <span
+    className={cn(
+      "mt-0.5 text-[10px] text-center leading-[0.9rem] z-20",
+      "px-0.5 py-[1px] rounded-sm text-amber-900 border border-green-100 shadow-sm",
+      "pointer-events-none",
+      active ? "bg-amber-50 border-amber-200" : ""
+    )}
+    aria-hidden={false}
+  >
+    {item.label}
+  </span>
+)}
+
               </Link>
             );
           })}
@@ -451,7 +479,7 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
       )}
 
       <style>{`
-        .sidebar-scroll::-webkit-scrollbar { width: 8px; }
+        .sidebar-scroll::-webkit-scrollbar { width: 16px; }
         .sidebar-scroll::-webkit-scrollbar-track { background: inherit; }
         .sidebar-scroll::-webkit-scrollbar-thumb { background-color: rgba(146, 64, 14, 0.2); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
         .sidebar-scroll:hover::-webkit-scrollbar-thumb { background-color: rgba(146, 64, 14, 0.4); }
@@ -462,6 +490,8 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
 };
 
 export default DashboardSidebar;
+
+
 
 
 

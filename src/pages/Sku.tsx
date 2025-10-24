@@ -1401,7 +1401,7 @@ const InventoryManager: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-2 w-full mx-auto">
       <Toaster position="top-right" />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-2xl font-semibold text-slate-800">Inventory Management</h2>

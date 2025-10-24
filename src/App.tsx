@@ -185,7 +185,7 @@ const App = () => (
               }
             />
             <Route
-              path="/sku/movement"
+              path="/sku/vendor-Management"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
@@ -195,7 +195,7 @@ const App = () => (
               }
             />
             <Route
-              path="/sku/sku"
+              path="/sku/Inventory-Management"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
@@ -438,7 +438,7 @@ const App = () => (
 
             {/* ---------- start REVIST routes ---------- */}
             <Route
-              path="/AdminProfilepage"
+              path="/Site-Settings"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>

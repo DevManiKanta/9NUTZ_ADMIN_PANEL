@@ -605,7 +605,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
                     <span className="text-sm font-medium text-white">{avatarInitial}</span>
                   </div>
                   <div className="text-sm">
-                    <div className="font-medium" onClick={() => navigate("/AdminProfilepage")}>
+                    <div className="font-medium" onClick={() => navigate("/Site-Settings")}>
                       {user?.name ?? user?.username ?? "Admin"}
                     </div>
                     <div className="text-xs text-gray-500">{user?.username ?? ""}</div>

@@ -604,11 +604,9 @@ const SkuList: React.FC = () => {
       setDeleteTarget(null);
     }
   };
-
   return (
     <div className="p-6">
       <Toaster position="top-right" />
-
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-2xl font-semibold">GST Management</h2>
         <div className="flex items-center gap-2">
@@ -619,15 +617,14 @@ const SkuList: React.FC = () => {
             <Plus className="w-4 h-4" />
             Add GST
           </button>
-          <button
+          {/* <button
             onClick={() => void fetchItems()}
             className="px-3 py-2 rounded-md border bg-white hover:bg-slate-50"
           >
             Refresh
-          </button>
+          </button> */}
         </div>
       </div>
-
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="hidden md:block">
           <table className="w-full text-sm text-left">
@@ -663,14 +660,12 @@ const SkuList: React.FC = () => {
                           className="px-3 py-1 rounded border inline-flex items-center gap-2"
                         >
                           <Edit3 className="w-4 h-4" />
-                          Edit
                         </button>
                         <button
                           onClick={() => confirmDelete(it)}
                           className="px-3 py-1 rounded bg-red-600 text-white inline-flex items-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Delete
                         </button>
                       </div>
                     </td>
@@ -680,7 +675,6 @@ const SkuList: React.FC = () => {
             </tbody>
           </table>
         </div>
-
         <div className="md:hidden p-4 grid gap-3">
           {loading ? (
             <div className="text-center text-slate-500">Loading…</div>
@@ -706,7 +700,6 @@ const SkuList: React.FC = () => {
           )}
         </div>
       </div>
-
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setModalOpen(false)} />
@@ -724,7 +717,6 @@ const SkuList: React.FC = () => {
             </div>
 
             <form onSubmit={handleSave} className="p-4 space-y-4">
-              {/* general server errors */}
               {generalErrors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 text-red-800 rounded p-3">
                   <div className="font-medium">Server returned errors:</div>
