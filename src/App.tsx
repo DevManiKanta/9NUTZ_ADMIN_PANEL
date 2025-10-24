@@ -95,7 +95,7 @@ const App = () => (
               }
             />
             <Route
-              path="/routemap"
+              path="/purchase-Details"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
@@ -135,7 +135,7 @@ const App = () => (
               }
             />
             <Route
-              path="/customer"
+              path="/Point-of-sale"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
@@ -145,7 +145,7 @@ const App = () => (
               }
             />
             <Route
-              path="/categorywisesale"
+              path="/category"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>

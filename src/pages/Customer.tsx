@@ -1,9 +1,9 @@
 
-// import React, { useEffect, useMemo, useRef, useState } from "react";
+// import React, { useEffect, useMemo, useRef, useState } from "react"; 
 // import { Search, ShoppingCart, X, Plus, Minus, Trash2, Edit3, Eye } from "lucide-react";
 // import toast, { Toaster } from "react-hot-toast";
 // import api from "../api/axios";
-
+// import {BASE_URL_2} from "../api/axios"
 // type Product = {
 //   id: string | number;
 //   name: string;
@@ -123,9 +123,7 @@
 //     email: "events@school.org",
 //     dateTimeISO: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
 //     amount: 1299.0,
-//     items: [
-//       { name: "Festive Combo", qty: 1, price: 1299 },
-//     ],
+//     items: [{ name: "Festive Combo", qty: 1, price: 1299 }],
 //     payment: {
 //       method: "cash",
 //       status: "collected",
@@ -168,8 +166,7 @@
 //   type PaymentMethod = "card" | "upi" | "cash" | "";
 //   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("");
 
-//   // NEW: sales tabs + sample data
-//   const [activeTab, setActiveTab] = useState<"online" | "offline">("online");
+//   // keeping selectedOrder & helpers as-is (not rendered) to avoid larger changes
 //   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
 //   // normalize server product - kept unchanged
@@ -489,10 +486,8 @@
 //     return `https://source.unsplash.com/featured/400x400/?${seed}`;
 //   };
 
-//   // helpers for sales UI
-//   const onlineSales = useMemo(() => SAMPLE_ORDERS.filter((o) => !o.offline), []);
-//   const offlineSales = useMemo(() => SAMPLE_ORDERS.filter((o) => !!o.offline), []);
-
+//   // helpers preserved (unused)
+//   const allSales = useMemo(() => SAMPLE_ORDERS, []);
 //   const formatDateTime = (iso: string) => {
 //     try {
 //       const d = new Date(iso);
@@ -501,10 +496,8 @@
 //       return iso;
 //     }
 //   };
-
 //   const formatCurrency = (n: number) => `₹ ${n.toFixed(2)}`;
 
-//   // open view modal
 //   const openOrderModal = (o: Order) => setSelectedOrder(o);
 //   const closeOrderModal = () => setSelectedOrder(null);
 
@@ -515,9 +508,8 @@
 //       {/* Top row: title + search + cart */}
 //       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
 //         <div>
-//           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Point of Sales</h1>
+//           {/* <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Point of Sales</h1> */}
 //         </div>
-
 //         <div className="flex w-full md:w-auto items-center gap-3">
 //           <div className="relative flex-1 md:flex-none">
 //             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -545,80 +537,15 @@
 //         </div>
 //       </div>
 
-//       {/* NEW: Tabs for Online / Offline sales */}
-//       <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-//         <div className="flex items-center justify-between mb-3">
-//           <div className="flex items-center gap-3">
-//             <button
-//               onClick={() => setActiveTab("online")}
-//               className={`px-4 py-2 rounded-md font-medium ${activeTab === "online" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700"}`}
-//             >
-//               Online Sales
-//             </button>
-//             <button
-//               onClick={() => setActiveTab("offline")}
-//               className={`px-4 py-2 rounded-md font-medium ${activeTab === "offline" ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-700"}`}
-//             >
-//               Offline Sales
-//             </button>
-//           </div>
-
-//           <div className="text-sm text-slate-600">
-//             {activeTab === "online" ? `${onlineSales.length} online orders` : `${offlineSales.length} offline orders`}
-//           </div>
-//         </div>
-
-//         {/* Table for selected tab */}
-//         <div className="overflow-x-auto">
-//           <table className="min-w-full divide-y divide-slate-100">
-//             <thead>
-//               <tr className="text-left text-sm text-slate-600">
-//                 <th className="px-4 py-3">Order ID</th>
-//                 <th className="px-4 py-3">Name</th>
-//                 <th className="px-4 py-3">Phone</th>
-//                 <th className="px-4 py-3">Email</th>
-//                 <th className="px-4 py-3">Date & Time</th>
-//                 <th className="px-4 py-3">Amount</th>
-//                 <th className="px-4 py-3">Actions</th>
-//               </tr>
-//             </thead>
-
-//             <tbody className="bg-white divide-y divide-slate-100">
-//               {(activeTab === "online" ? onlineSales : offlineSales).map((o) => (
-//                 <tr key={o.orderId}>
-//                   <td className="px-4 py-3 align-top text-sm text-slate-800">{o.orderId}</td>
-//                   <td className="px-4 py-3 align-top text-sm text-slate-700">{o.customerName}</td>
-//                   <td className="px-4 py-3 align-top text-sm text-slate-700">{o.phone}</td>
-//                   <td className="px-4 py-3 align-top text-sm text-slate-600">{o.email ?? "-"}</td>
-//                   <td className="px-4 py-3 align-top text-sm text-slate-600">{formatDateTime(o.dateTimeISO)}</td>
-//                   <td className="px-4 py-3 align-top text-sm font-semibold">{formatCurrency(o.amount)}</td>
-//                   <td className="px-4 py-3 align-top text-sm">
-//                     <div className="flex items-center gap-2">
-//                       <button title="View details" onClick={() => openOrderModal(o)} className="inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-600 text-white text-sm">
-//                         <Eye className="w-4 h-4" /> View
-//                       </button>
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-
-//               {(activeTab === "online" ? onlineSales : offlineSales).length === 0 && (
-//                 <tr>
-//                   <td colSpan={7} className="px-4 py-6 text-center text-sm text-slate-500">No orders to show</td>
-//                 </tr>
-//               )}
-//             </tbody>
-//           </table>
-//         </div>
-//       </div>
+//       {/* Orders table removed as requested */}
 
 //       {/* rest of your product listing UI (unchanged) */}
 //       <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm mb-6">
 //         <div className="flex items-center justify-between mb-4">
 //           <div className="text-sm text-slate-600">{visibleProducts.length} products</div>
 //           <div className="flex items-center gap-2">
-//             <button onClick={() => refreshProducts()} className="px-3 py-1 rounded bg-slate-100 text-sm">Refresh</button>
-//             <button onClick={() => openAdminCreate()} className="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Add Product</button>
+//             {/* <button onClick={() => refreshProducts()} className="px-3 py-1 rounded bg-slate-100 text-sm">Refresh</button> */}
+//             {/* <button onClick={() => openAdminCreate()} className="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Add Product</button> */}
 //           </div>
 //         </div>
 
@@ -1008,74 +935,13 @@
 //         </div>
 //       )}
 
-//       {/* ORDER VIEW MODAL */}
+//       {/* ORDER VIEW MODAL (kept but unreachable without the table trigger) */}
 //       {selectedOrder && (
 //         <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
 //           <div className="absolute inset-0 bg-black/40" onClick={closeOrderModal} />
 //           <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-lg z-10 overflow-auto max-h-[90vh]">
 //             <div className="p-6">
-//               <div className="flex items-start justify-between gap-4">
-//                 <div>
-//                   <h2 className="text-xl font-semibold">Order {selectedOrder.orderId}</h2>
-//                   <div className="text-sm text-slate-600">{selectedOrder.customerName} • {selectedOrder.phone}</div>
-//                   {selectedOrder.email && <div className="text-sm text-slate-600">{selectedOrder.email}</div>}
-//                   <div className="text-sm text-slate-500 mt-1">{formatDateTime(selectedOrder.dateTimeISO)}</div>
-//                 </div>
-
-//                 <div className="text-right">
-//                   <div className="text-sm text-slate-600">Total</div>
-//                   <div className="text-2xl font-bold">{formatCurrency(selectedOrder.amount)}</div>
-//                 </div>
-//               </div>
-
-//               <hr className="my-4" />
-
-//               <div>
-//                 <h3 className="text-lg font-medium mb-2">Items</h3>
-//                 <div className="space-y-2">
-//                   {selectedOrder.items.map((it, i) => (
-//                     <div key={i} className="flex items-center justify-between">
-//                       <div>
-//                         <div className="font-medium">{it.name}</div>
-//                         <div className="text-sm text-slate-500">Qty: {it.qty} • Price: ₹ {it.price.toFixed(2)}</div>
-//                       </div>
-//                       <div className="font-medium">₹ {(it.qty * it.price).toFixed(2)}</div>
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-
-//               <hr className="my-4" />
-
-//               <div>
-//                 <h3 className="text-lg font-medium mb-2">Payment details</h3>
-//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-//                   <div>
-//                     <div className="text-sm text-slate-500">Method</div>
-//                     <div className="font-medium">{selectedOrder.payment.method}</div>
-//                   </div>
-//                   <div>
-//                     <div className="text-sm text-slate-500">Status</div>
-//                     <div className="font-medium">{selectedOrder.payment.status ?? "-"}</div>
-//                   </div>
-//                   <div>
-//                     <div className="text-sm text-slate-500">Transaction ID</div>
-//                     <div className="font-medium">{selectedOrder.payment.transactionId ?? "-"}</div>
-//                   </div>
-//                   <div>
-//                     <div className="text-sm text-slate-500">Provider</div>
-//                     <div className="font-medium">{selectedOrder.payment.provider ?? "-"}</div>
-//                   </div>
-//                   <div className="sm:col-span-2">
-//                     <div className="text-sm text-slate-500">Notes</div>
-//                     <div className="text-sm text-slate-700">{selectedOrder.payment.notes ?? "-"}</div>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               <div className="mt-6 flex justify-end gap-2">
-//                 <button onClick={closeOrderModal} className="px-4 py-2 rounded border">Close</button>
-//               </div>
+//               {/* modal content unchanged */}
 //             </div>
 //           </div>
 //         </div>
@@ -1085,11 +951,11 @@
 //   );
 // }
 
-import React, { useEffect, useMemo, useRef, useState } from "react"; 
-import { Search, ShoppingCart, X, Plus, Minus, Trash2, Edit3, Eye } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Search, ShoppingCart, X, Plus, Minus, Trash2, Edit3 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../api/axios";
-import {BASE_URL_2} from "../api/axios"
+import { BASE_URL_2 } from "../api/axios";
 
 type Product = {
   id: string | number;
@@ -1146,7 +1012,6 @@ const SAMPLE_PRODUCTS: Product[] = [
   { id: "p-6", name: "Healthy Snack Mix (250g)", price: 150, unit: "250g", image: "https://source.unsplash.com/featured/600x600/?healthy-snack,nuts,seeds&sig=106", sku: "SNK-250", stock: 80, category: "Snacks" },
 ];
 
-// static sample orders (online/offline)
 const SAMPLE_ORDERS: Order[] = [
   {
     orderId: "ORD-1001",
@@ -1253,6 +1118,10 @@ export default function POS(): JSX.Element {
   type PaymentMethod = "card" | "upi" | "cash" | "";
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("");
 
+  // pagination: added Tailwind pagination (only)
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState<number>(1);
+
   // keeping selectedOrder & helpers as-is (not rendered) to avoid larger changes
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -1302,6 +1171,11 @@ export default function POS(): JSX.Element {
     return () => { mounted = false; };
   }, []);
 
+  // reset page when query or product list changes
+  useEffect(() => {
+    setPage(1);
+  }, [query, products]);
+
   const cartLines: CartLine[] = useMemo(() => {
     const arr: CartLine[] = [];
     for (const pid of Object.keys(cartMap)) {
@@ -1325,6 +1199,10 @@ export default function POS(): JSX.Element {
     const q = query.toLowerCase();
     return p.name.toLowerCase().includes(q) || String(p.sku || "").toLowerCase().includes(q) || String(p.category || "").toLowerCase().includes(q);
   });
+
+  // pagination: compute paginated products and pages
+  const totalPages = Math.max(1, Math.ceil(visibleProducts.length / PAGE_SIZE));
+  const paginatedProducts = visibleProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function addToCart(product: Product, qty = 1) {
     setCartMap((m) => {
@@ -1573,7 +1451,6 @@ export default function POS(): JSX.Element {
     return `https://source.unsplash.com/featured/400x400/?${seed}`;
   };
 
-  // helpers preserved (unused)
   const allSales = useMemo(() => SAMPLE_ORDERS, []);
   const formatDateTime = (iso: string) => {
     try {
@@ -1591,13 +1468,9 @@ export default function POS(): JSX.Element {
   return (
     <div>
       <Toaster position="top-right" />
-
-      {/* Top row: title + search + cart */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Point of Sales</h1>
-        </div>
-
+      <div className="bg-white rounded-xl p-2 md:p-6 shadow-sm mb-6" >
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+        <div />
         <div className="flex w-full md:w-auto items-center gap-3">
           <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -1624,32 +1497,24 @@ export default function POS(): JSX.Element {
           </button>
         </div>
       </div>
-
-      {/* Orders table removed as requested */}
-
-      {/* rest of your product listing UI (unchanged) */}
-      <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm mb-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-slate-600">{visibleProducts.length} products</div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => refreshProducts()} className="px-3 py-1 rounded bg-slate-100 text-sm">Refresh</button>
-            <button onClick={() => openAdminCreate()} className="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Add Product</button>
-          </div>
+          {/* <div className="text-sm text-slate-600">{visibleProducts.length} products</div> */}
+          <div className="flex items-center gap-2" />
         </div>
 
         {/* Desktop table (md+) */}
-        <div className="hidden md:block overflow-x-auto">
+        <div >
           <table className="min-w-full divide-y divide-slate-100">
             <thead>
               <tr className="text-left text-sm text-slate-600">
-                <th className="px-4 py-3 w-12">S.no</th>
-                <th className="px-4 py-3 w-20">Image</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Grams</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Stock</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4  w-12">S.no</th>
+                <th className="px-4  w-20">Image</th>
+                <th className="px-4">Name</th>
+                <th className="px-4">Category</th>
+                <th className="px-4">Grams</th>
+                <th className="px-4">Price</th>
+                <th className="px-4">Stock</th>
+                <th className="px-4 text-right">Actions</th>
               </tr>
             </thead>
 
@@ -1657,33 +1522,34 @@ export default function POS(): JSX.Element {
               {loadingProducts
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded w-6" /></td>
-                      <td className="px-4 py-4"><div className="h-12 w-12 rounded-full bg-slate-200" /></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded w-48" /></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded w-32" /></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded w-12" /></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded w-20" /></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded w-8" /></td>
-                      <td className="px-4 py-4 text-right"><div className="h-8 bg-slate-200 rounded w-24 inline-block" /></td>
+                      <td className="px-4 "><div className="h-4 bg-slate-200 rounded w-6" /></td>
+                      <td className="px-4 "><div className="h-12 w-12 rounded-full bg-slate-200" /></td>
+                      <td className="px-4 "><div className="h-4 bg-slate-200 rounded w-48" /></td>
+                      <td className="px-4 "><div className="h-4 bg-slate-200 rounded w-32" /></td>
+                      <td className="px-4 "><div className="h-4 bg-slate-200 rounded w-12" /></td>
+                      <td className="px-4 "><div className="h-4 bg-slate-200 rounded w-20" /></td>
+                      <td className="px-4 "><div className="h-4 bg-slate-200 rounded w-8" /></td>
+                      <td className="px-4  text-right"><div className="h-8 bg-slate-200 rounded w-24 inline-block" /></td>
                     </tr>
                   ))
-                : visibleProducts.map((p, idx) => {
+                : paginatedProducts.map((p, idx) => {
+                    const globalIndex = (page - 1) * PAGE_SIZE + idx;
                     const inCartQty = cartMap[String(p.id)] ?? 0;
                     const imageSrc = p.image_url ?? p.image ?? fallbackFor(p);
                     return (
                       <tr key={p.id}>
-                        <td className="px-4 py-4 align-top text-sm text-slate-700">{idx + 1}</td>
+                        <td className="px-4 py-4 align-top text-sm text-slate-700">{globalIndex + 1}</td>
                         <td className="px-4 py-4 align-top">
-                          <div className="w-14 h-14 rounded-full overflow-hidden bg-white border">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-white border">
                             <img
                               src={imageSrc}
                               alt={p.name}
-                              className="object-cover w-full h-full"
+                              className="object-cover w-10 h-10"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallbackFor(p); }}
                             />
                           </div>
                         </td>
-                        <td className="px-4 py-4 align-top">
+                        <td className="px-4 align-top">
                           <div className="font-medium text-slate-800">{p.name}</div>
                           <div className="text-sm text-slate-500 mt-1">{p.sku ?? p.unit}</div>
                         </td>
@@ -1733,7 +1599,7 @@ export default function POS(): JSX.Element {
                     <div className="h-3 bg-slate-200 rounded w-1/2" />
                   </div>
                 ))
-              : visibleProducts.map((p) => {
+              : paginatedProducts.map((p) => {
                   const inCartQty = cartMap[String(p.id)] ?? 0;
                   const imageSrc = p.image_url ?? p.image ?? fallbackFor(p);
                   return (
@@ -1813,11 +1679,60 @@ export default function POS(): JSX.Element {
                 })}
           </div>
         </div>
+
+        {/* Pagination (Tailwind) */}
+        {visibleProducts.length > 0 && totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <div className="text-sm text-slate-500">
+              Showing {(visibleProducts.length === 0) ? 0 : (page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, visibleProducts.length)} of {visibleProducts.length}
+            </div>
+
+            <nav className="inline-flex items-center gap-2" aria-label="Pagination">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1 rounded border bg-white hover:bg-slate-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <div className="hidden sm:flex items-center gap-1">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const pNum = i + 1;
+                  const isActive = pNum === page;
+                  return (
+                    <button
+                      key={pNum}
+                      onClick={() => setPage(pNum)}
+                      className={`px-3 py-1 rounded ${isActive ? "bg-slate-800 text-white" : "bg-white border hover:bg-slate-50"}`}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      {pNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* compact display for small screens */}
+              <div className="sm:hidden text-sm text-slate-700 px-2">
+                {page} / {totalPages}
+              </div>
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1 rounded border bg-white hover:bg-slate-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
 
       {/* Cart Drawer (unchanged) */}
-      <div className={`fixed inset-0 z-50 ${cartOpen ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!cartOpen}>
-        <div onClick={() => setCartOpen(false)} className={`absolute inset-0 bg-black/40 transition-opacity ${cartOpen ? "opacity-100" : "opacity-0"}`} />
+      <div className={`fixed inset-0 z-50 ${cartOpen ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!cartOpen} >
+        <div onClick={() => setCartOpen(false)} className={`absolute inset-0 bg-black/40 transition-opacity ${cartOpen ? "opacity-100" : "opacity-0"}`}  />
         <aside
           className={`fixed right-0 top-0 h-full bg-white shadow-2xl transform transition-transform ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
           style={{
@@ -1972,7 +1887,6 @@ export default function POS(): JSX.Element {
         </aside>
       </div>
 
-      {/* Admin modal */}
       {adminModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setAdminModalOpen(false)} />
@@ -2007,8 +1921,6 @@ export default function POS(): JSX.Element {
           </div>
         </div>
       )}
-
-      {/* Delete confirm */}
       {deleteTarget && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setDeleteTarget(null)} />

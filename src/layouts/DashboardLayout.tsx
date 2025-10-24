@@ -29,7 +29,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           onSearchChange={setSearchValue}
         />
         
-        <main className="flex-1 overflow-y-auto bg-background p-8">
+        <main className="flex-1 overflow-y-auto bg-background">
           {children}
         </main>
       </div>

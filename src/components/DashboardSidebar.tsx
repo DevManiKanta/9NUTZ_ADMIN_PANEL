@@ -254,12 +254,12 @@ interface SidebarProps {
 const navigationItems = [
   { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: Home },
   { id: "products", label: "Products", path: "/products", icon: Package },
-  { id: "customerSaleHistory", label: "Category", path: "/categorywisesale", icon: BarChart3 },
-  { id: "franchise", label: "Franchise", path: "/franchise", icon: Building2 },
-  { id: "customer", label: "Point of Sale", path: "/Customer", icon: Users },
+  { id: "customerSaleHistory", label: "Category", path: "/category", icon: BarChart3 },
+  // { id: "franchise", label: "Franchise", path: "/franchise", icon: Building2 },
+  { id: "customer", label: "Point of Sale", path: "/Point-of-sale", icon: Users },
   { id: "StockVariation", label: "Expenses Summary", path: "/ExpenseSummary", icon: Repeat },
-  { id: "routemap", label: "Pos Details", path: "/routemap", icon: Map },
-  { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
+  { id: "routemap", label: "Purchase Details", path: "/purchase-Details", icon: Map },
+  // { id: "Franchiserequests", label: "Franchise Request", path: "/CommingSoon", icon: Map },
   { id: "Orders", label: "Orders", path: "/Orders", icon: Map },
   { id: "BannersPage", label: "Banners", path: "/BannersPage", icon: Map },
 ];
