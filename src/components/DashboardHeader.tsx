@@ -371,6 +371,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
 
   const logoSrc = buildLogoUrl(logoRaw) || IMAGES.Nutz;
   const siteName = settings?.site_name || "9nutz";
+  const ProfileName=settings?.name || "Admin";
 
   const { logout, user } = useAuth();
 
@@ -442,8 +443,8 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
   const handleLogout = async () => {
     try {
       await logout();
+      localStorage.clear()
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error("Logout failed", err);
     } finally {
       setUserOpen(false);
@@ -562,7 +563,6 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
               3
             </span>
           </button>
-
           {notifOpen && (
             <div ref={notifPanelRef} className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg ring-1 ring-black/5 z-50">
               <div className="p-3">
@@ -576,8 +576,6 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
             </div>
           )}
         </div>
-
-        {/* User dropdown */}
         <div className="relative">
           <div
             ref={userBtnRef}
@@ -599,7 +597,6 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
               {user?.name ?? user?.username ?? "Admin"}
             </span>
           </div>
-
           {userOpen && (
             <div ref={userPanelRef} role="menu" aria-label="User menu" className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black/5 z-50">
               <div className="p-3">
