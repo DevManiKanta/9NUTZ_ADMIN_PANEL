@@ -16,6 +16,7 @@ import CategoryWiseSale from "./pages/CategoryWiseSale";
 import StockVariation from "./pages/StockVariation";
 import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/components/contexts/AuthContext";
+import { GstProvider } from "./components/contexts/gstContext";
 import { LoginForm } from "@/components/auth/LoginForm";
 // import { SignupForm } from "./components/auth/SignUpForm";
 import { ForgotPasswordForm } from "./components/auth/ForgotPasswordForm";
@@ -68,6 +69,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <GstProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginForm />} />
@@ -544,6 +546,7 @@ const App = () => (
             />
           </Routes>
         </BrowserRouter>
+        </GstProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

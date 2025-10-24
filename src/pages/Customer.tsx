@@ -956,6 +956,8 @@ import { Search, ShoppingCart, X, Plus, Minus, Trash2, Edit3 } from "lucide-reac
 import toast, { Toaster } from "react-hot-toast";
 import api from "../api/axios";
 import { BASE_URL_2 } from "../api/axios";
+import { useGst, GstItem } from "@/components/contexts/gstContext";
+
 
 type Product = {
   id: string | number;
@@ -1114,6 +1116,7 @@ export default function POS(): JSX.Element {
 
   const [customerName, setCustomerName] = useState<string>("");
   const [customerPhone, setCustomerPhone] = useState<string>("");
+  const [customeremail, setCustomerEmail] = useState<string>("");
 
   type PaymentMethod = "card" | "upi" | "cash" | "";
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("");
@@ -1139,6 +1142,9 @@ export default function POS(): JSX.Element {
       category: r.category && typeof r.category === "object" ? r.category.name ?? r.category : r.category,
     };
   };
+  const { items, loading, error, fetchGsts, addGst, updateGst, deleteGst } = useGst();
+  const { items: gstOptions, loading: gstLoading } = useGst();
+  
 
   useEffect(() => {
     let mounted = true;
@@ -1267,6 +1273,7 @@ export default function POS(): JSX.Element {
     const payload = {
       name: customerName.trim(),
       phone: customerPhone.replace(/\D/g, ""),
+      // email:customeremail.trim(),
       payment: paymentMethod,
       items: cartLines.map(l => ({
         product_id: typeof l.product.id === "string" && /^\d+$/.test(String(l.product.id)) ? Number(l.product.id) : l.product.id,
@@ -1736,7 +1743,7 @@ export default function POS(): JSX.Element {
         <aside
           className={`fixed right-0 top-0 h-full bg-white shadow-2xl transform transition-transform ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
           style={{
-            width: "100%",
+            // width: "80%",
             maxWidth: 820,
           }}
           role="dialog"
@@ -1830,18 +1837,40 @@ export default function POS(): JSX.Element {
               </div>
 
               <div className="mb-3">
-                <label className="text-sm text-slate-600 block mb-1">GST %</label>
-                <select value={gstPercent} onChange={(e) => setGstPercent(Number(e.target.value))} className="p-2 border rounded bg-slate-50">
-                  <option value={0}>0</option>
-                  <option value={0.25}>0.25</option>
-                  <option value={3}>3</option>
-                  <option value={5}>5</option>
-                  <option value={12}>12</option>
-                  <option value={18}>18</option>
-                  <option value={28}>28</option>
-                </select>
-                <div className="ml-auto text-sm text-slate-500">Tax applied to subtotal</div>
-              </div>
+  <label className="text-sm text-slate-600 block mb-1">GST %</label>
+  <select
+    value={gstPercent}
+    onChange={(e) => setGstPercent(Number(e.target.value))}
+    disabled={gstLoading}
+    className="p-2 border rounded bg-slate-50 w-full"
+  >
+    {/* fallback if API not loaded */}
+    {gstLoading && <option>Loading...</option>}
+
+    {/* dynamic options from context */}
+    {!gstLoading &&
+      gstOptions.length > 0 &&
+      gstOptions.map((gst) => (
+        <option key={gst.id} value={gst.percentage}>
+          {`${gst.percentage}%`}
+        </option>
+      ))}
+
+    {/* fallback if API fails or empty */}
+    {!gstLoading && gstOptions.length === 0 && (
+      <>
+        <option value={0}>0%</option>
+        <option value={0.25}>0.25%</option>
+        <option value={3}>3%</option>
+        <option value={5}>5%</option>
+        <option value={12}>12%</option>
+        <option value={18}>18%</option>
+        <option value={28}>28%</option>
+      </>
+    )}
+  </select>
+  <div className="ml-auto text-sm text-slate-500">Tax applied to subtotal</div>
+</div>
 
               <div className="flex items-center justify-between mb-4">
                 <div className="text-lg font-medium">Total</div>
@@ -1854,9 +1883,13 @@ export default function POS(): JSX.Element {
                   <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" className="w-full p-2 border rounded" />
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600 block mb-1">Phone number</label>
+                  <label className="text-sm text-slate-600 block mb-1">Enter your WhatsApp Number</label>
                   <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="10+ digits" className="w-full p-2 border rounded" inputMode="tel" />
                 </div>
+                 {/* <div>
+                  <label className="text-sm text-slate-600 block mb-1">Email</label>
+                  <input value={customeremail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email" className="w-full p-2 border rounded" inputMode="tel" />
+                </div> */}
               </div>
 
               <div className="mb-3">
