@@ -1,5 +1,5 @@
 
-"use client";
+
 import React, { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -41,6 +41,10 @@ export default function QrPayments() {
   // local UI state
   const [activeTab, setActiveTab] = useState<"online" | "offline">("online");
   const [selected, setSelected] = useState<SaleRow | null>(null);
+  // add next to other useState declarations
+const [shipmentOpen, setShipmentOpen] = useState(false);
+const [shipmentNote, setShipmentNote] = useState("");
+
 
   // fetch on mount (thunks handle dedupe/merging)
   React.useEffect(() => {
@@ -77,7 +81,6 @@ export default function QrPayments() {
       </div>
     );
   };
-
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
    <div className="w-full mx-auto">
@@ -169,6 +172,22 @@ export default function QrPayments() {
                             title="Mark as Rejected"
                           >
                             Reject
+                          </button>
+                          <button
+                            type="button"
+                          onClick={() => {
+  // setSelected(r);         // keep the row selected (you already use selected elsewhere)
+  setShipmentOpen(true);  // open shipment popup
+}}
+                            // disabled={r.status === "Accepted"}
+                            className={`inline-flex items-center px-3 py-1 rounded text-sm border focus:outline-none ${
+                              r.status === "Accepted"
+                                ? "bg-green-100 text-green-500 border-green-200 cursor-not-allowed"
+                                : "bg-green-600 text-white border-green-600 hover:bg-green-700"
+                            }`}
+                            title="Mark as Accepted"
+                          >
+                            Shipment
                           </button>
                         </div>
                       </td>
@@ -450,6 +469,47 @@ export default function QrPayments() {
           </div>
         </div>
       )}
+      {/* Shipment modal */}
+{shipmentOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-black/40" onClick={() => setShipmentOpen(false)} />
+    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md p-4 z-10">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold">Create Shipment</h3>
+        <button onClick={() => setShipmentOpen(false)} className="px-2 py-1 rounded border">Close</button>
+      </div>
+
+      <div className="space-y-3">
+        <label className="block text-sm">
+          <div className="text-xs text-gray-600 mb-1">Shipment Note</div>
+          <input
+            type="text"
+            value={shipmentNote}
+            onChange={(e) => setShipmentNote(e.target.value)}
+            className="w-full p-2 border rounded"
+            placeholder="Enter tracking / note"
+          />
+        </label>
+
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => {
+              // call your existing update or submit logic here if needed
+              // e.g. updateStatusLocal(selected?.id, "Accepted");
+              // (Or perform a separate API call to create shipment)
+              setShipmentOpen(false);
+              setShipmentNote("");
+            }}
+            className="px-4 py-2 rounded bg-amber-500 text-white"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

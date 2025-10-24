@@ -337,8 +337,9 @@ export const DashboardSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle
     <div
       className={cn(
         "bg-green-100 text-gray-800 h-screen flex flex-col border-r border-green-300",
-        isCollapsed ? "w-16" : "w-64"
+        isCollapsed ? "w-20" : "w-64"
       )}
+  
     >
       <div className="h-16 flex items-center justify-between px-4  flex-shrink-0">
         {!isCollapsed && (

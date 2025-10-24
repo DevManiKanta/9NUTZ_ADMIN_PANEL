@@ -114,7 +114,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
   const triggerRef = useRef(null);
 
   // token helper
-  const getToken = () => localStorage.getItem(TOKEN_KEY) || "";
+  const getToken = () => localStorage.getItem("token") || "";
 
   // validators
   const validators = {
@@ -203,7 +203,6 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
         setIsFetching(false);
         return;
       }
-
       // 1) Profile-like response (array)
       if (data?.status && Array.isArray(data.profile) && data.profile.length > 0) {
         const p = data.profile[0];
@@ -215,6 +214,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
           address: p.address ?? "",
           createdAt: p.created_at ?? p.createdAt ?? new Date().toISOString(),
         };
+        console.log("normalizedUser",normalizedUser)
         setUser((prev) => ({ ...prev, ...normalizedUser }));
         // update localStorage user safely
         try {
@@ -283,8 +283,6 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
         try {
           dispatch(setSiteSettings(normalizedSettings));
         } catch (e) {
-          // ignore if dispatch not present / fails
-          // console.warn("dispatch setSiteSettings failed:", e);
         }
       }
 
@@ -533,9 +531,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
       setIsUpdating(false);
     }
   };
-
   const displayName = user?.name || user?.fullName || user?.username || "User";
-
   return (
     <div className="space-y-8">
       {/* Top: Personal Details + Quick Stats */}
@@ -559,7 +555,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
             {/* Name */}
             <div className="p-4 bg-white rounded-lg border">
               <div className="text-xs uppercase text-gray-500">Name</div>
-              <div className="mt-1 font-medium text-gray-900">{displayName}</div>
+              <div className="mt-1 font-medium text-gray-900">{settings?.site_name || "—"}</div>
             </div>
 
             {/* Email */}
@@ -567,7 +563,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
               <div className="text-xs uppercase text-gray-500">Email</div>
               <div className="mt-1 font-medium text-gray-900 flex items-center gap-2">
                 <Mail className="h-4 w-4 text-gray-400" />
-                {user?.email ?? "—"}
+                {settings?.email || "—"}
               </div>
             </div>
 
@@ -576,7 +572,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
               <div className="text-xs uppercase text-gray-500">Phone</div>
               <div className="mt-1 font-medium text-gray-900 flex items-center gap-2">
                 <Phone className="h-4 w-4 text-gray-400" />
-                {user?.phone || "—"}
+              {settings?.phone || "—"}
               </div>
             </div>
 
@@ -585,7 +581,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
               <div className="text-xs uppercase text-gray-500">Address</div>
               <div className="mt-1 font-medium text-gray-900 flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-gray-400" />
-                {user?.address || "—"}
+                {settings?.address || "—"}
               </div>
             </div>
           </div>

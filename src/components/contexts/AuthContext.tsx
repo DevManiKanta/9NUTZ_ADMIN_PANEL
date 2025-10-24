@@ -180,9 +180,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         // validate token or refresh user info
-        const res = await api.get("/login");
-        const u = extractUserFromResponse(res?.data ?? null);
-        setUser(u);
+        // const res = await api.get("/login");
+        // const u = extractUserFromResponse(res?.data ?? null);
+        // setUser(u);
       } catch {
         // keep token even if validation fails; user stays null
         setUser(null);
@@ -207,6 +207,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  // if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };
