@@ -381,7 +381,6 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
     const loadingId = toast.loading("Updating settings...");
     try {
       const fd = new FormData();
-
       // user fields
       fd.append("name", form.name.trim());
       fd.append("email", form.email.trim());
@@ -414,7 +413,9 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
       });
 
       const data = await res.json().catch(() => null);
-
+       if(data){
+           window.location.reload()
+       }
       if (!res.ok) {
         const serverMsg = data?.message || data?.error || `Update failed (${res.status})`;
         toast.error(serverMsg);
@@ -462,6 +463,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
           address: p.address ?? updatedUser.address,
           createdAt: p.created_at ?? p.createdAt ?? updatedUser.createdAt,
         };
+  
       } else if (data?.user && typeof data.user === "object") {
         const p = data.user;
         updatedUser = {
@@ -680,7 +682,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
                 </label>
 
                 {/* Password */}
-                <label className="space-y-1 md:col-span-2 relative">
+                {/* <label className="space-y-1 md:col-span-2 relative">
                   <div className="text-sm text-gray-600">Password (leave blank to keep current)</div>
                   <div className="relative">
                     <input
@@ -696,7 +698,7 @@ export default function ProfilePage({ initialUser = null, initialOrders = [] }) 
                     </button>
                   </div>
                   <div className="text-xs text-gray-500">If you enter a password it must be at least 8 chars and include a digit.</div>
-                </label>
+                </label> */}
 
                 {/* Settings fields */}
                 <label className="space-y-1">
