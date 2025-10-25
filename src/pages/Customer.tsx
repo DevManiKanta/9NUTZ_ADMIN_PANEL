@@ -955,7 +955,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, ShoppingCart, X, Plus, Minus, Trash2, Edit3 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../api/axios";
-import { BASE_URL_2 } from "../api/axios";
+// import { BASE_URL_2 } from "../api/axios";
 import { useGst, GstItem } from "@/components/contexts/gstContext";
 
 
@@ -1563,16 +1563,27 @@ export default function POS(): JSX.Element {
                         <td className="px-4 py-4 align-top text-sm text-slate-600">{p.category ?? "-"}</td>
                         <td className="px-4 py-4 align-top text-sm text-slate-600">{p.unit ?? "-"}</td>
                         <td className="px-4 py-4 align-top text-sm font-semibold">₹ {Number(p.price || 0).toFixed(2)}</td>
-                        <td className="px-4 py-4 align-top text-sm text-slate-700">{p.stock ?? "-"}</td>
+                      <td className="px-4 py-4 align-top text-sm text-slate-700">
+  {p.stock === 0 ? (
+    <span className="text-red-600 font-medium">Out of Stock</span>
+  ) : (
+    p.stock ?? "-"
+  )}
+</td>
+
                         <td className="px-4 py-4 align-top text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
                             {inCartQty === 0 ? (
-                              <button
-                                onClick={() => addToCart(p, 1)}
-                                className="inline-flex items-center gap-2 px-3 py-1 rounded bg-emerald-600 text-white text-sm"
-                              >
-                                <Plus className="w-4 h-4" /> Add
-                              </button>
+                              (p.stock === 0) ? (
+    <div className="w-full text-center text-sm text-red-600 font-medium py-2"></div>
+  ) : (
+    <button
+      onClick={() => addToCart(p, 1)}
+      className="w-md inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-emerald-600 text-white text-sm"
+    >
+      <Plus className="w-4 h-4" /> Add
+    </button>
+  )
                             ) : (
                               <div className="inline-flex items-center gap-1 border rounded px-1">
                                 <button onClick={() => dec(p.id)} className="px-2 py-1 rounded"><Minus className="w-4 h-4" /></button>
