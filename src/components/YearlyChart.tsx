@@ -84,22 +84,6 @@ export const YearlyChart: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        
-        {/* Bottom Stats */}
-        <div className="flex justify-center gap-8 mt-6 pt-4 border-t border-border">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Quarter 1</p>
-            <p className="text-lg font-semibold">$56.2k</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Quarter 2</p>
-            <p className="text-lg font-semibold">$42.5k</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">All Time</p>
-            <p className="text-lg font-semibold">$102.03k</p>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

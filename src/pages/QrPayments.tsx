@@ -699,111 +699,128 @@ export default function QrPayments() {
     );
   };
 
-  const handleShipmentSubmit = async () => {
-    // determine which order id to use: prefer explicit shipmentOrder, fallback to selected (shouldn't normally be needed)
-    const order = shipmentOrder ?? selected;
-    if (!order?.id) {
-      toast.error("No order selected for shipment");
+const handleShipmentSubmit = async () => {
+  // Ensure we show a loading toast while working
+  const loadingId = toast.loading("Updating order status...");
+
+  // determine which order id to use: prefer explicit shipmentOrder, fallback to selected
+  const order = (typeof shipmentOrder !== "undefined" && shipmentOrder) ? shipmentOrder : selected;
+  if (!order?.id) {
+    toast.dismiss(loadingId);
+    toast.error("No order selected for shipment");
+    return;
+  }
+
+  try {
+    // Build FormData to match your curl (--form)
+    const fd = new FormData();
+    fd.append("status", shipmentStatus);
+
+    // If Shipping, require awb_number (tracking id) and optionally include shipping_url
+    if (shipmentStatus === "Shipping") {
+      if (!shipmentNote?.trim()) {
+        toast.dismiss(loadingId);
+        toast.error("Please enter AWB / Tracking ID");
+        return;
+      }
+      fd.append("awb_number", shipmentNote.trim());
+      if (shipmentUrl?.trim()) fd.append("shipping_url", shipmentUrl.trim());
+    } else {
+      // For Confirmed / Delivered, include awb_number / shipping_url if present (server may ignore)
+      if (shipmentNote?.trim()) fd.append("awb_number", shipmentNote.trim());
+      if (shipmentUrl?.trim()) fd.append("shipping_url", shipmentUrl.trim());
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.dismiss(loadingId);
+      toast.error("Missing auth token");
       return;
     }
 
-    // Build FormData to match curl --form usage
-    try {
-      const fd = new FormData();
-      fd.append("status", shipmentStatus);
+    const orderId = order.id;
+    const url = `/admin/online-orders/update-status/${orderId}`;
 
-      // If shipping, require awb / tracking and optionally include shipping_url
-      if (shipmentStatus === "Shipping") {
-        if (!shipmentNote.trim()) {
-          toast.error("Please enter AWB / Tracking ID");
-          return;
-        }
-        // server expects awb_number per your curl
-        fd.append("awb_number", shipmentNote.trim());
-        if (shipmentUrl && shipmentUrl.trim()) fd.append("shipping_url", shipmentUrl.trim());
+    const res = await api.post(url, fd, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        // Do NOT set Content-Type; browser will set multipart/form-data boundary
+      },
+    });
+
+    // Robust handling of server response:
+    // Prefer server.message, but also accept cases where status=false but message says success.
+    const data = res?.data;
+    if (data && typeof data === "object") {
+      const serverMsg = data?.message ?? (data?.status ? "OK" : "Request failed");
+
+      const isSuccess =
+        data?.status === true ||
+        String(serverMsg || "").toLowerCase().includes("success") ||
+        String(serverMsg || "").toLowerCase().includes("updated");
+
+      if (isSuccess) {
+        toast.dismiss(loadingId);
+        toast.success(String(serverMsg));
       } else {
-        // for Confirmed / Delivered include shipping_url or awb if provided (server might ignore)
-        if (shipmentNote && shipmentNote.trim()) fd.append("awb_number", shipmentNote.trim());
-        if (shipmentUrl && shipmentUrl.trim()) fd.append("shipping_url", shipmentUrl.trim());
-      }
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Missing auth token");
-        return;
-      }
-
-      const orderId = order.id;
-      const url = `/admin/online-orders/update-status/${orderId}`;
-
-      const res = await api.post(url, fd, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          // Do NOT set Content-Type when using FormData
-        },
-      });
-
-      // Prefer server message if provided. Accept objects or strings safely.
-      if (res?.data && typeof res.data === "object") {
-        const serverMsg = res.data?.message ?? (res.data?.status ? "OK" : "Request failed");
-        if (res.data?.status === true) {
-          toast.success(String(serverMsg));
-        } else {
-          // If server returned an errors object, try to show it concisely
-          if (res.data?.errors) {
-            // errors could be { field: [msgs] } or array
-            try {
-              const flat = Object.values(res.data.errors)
-                .flat()
-                .join(" ");
-              if (flat) toast.error(flat);
-              else toast.error(String(serverMsg));
-            } catch {
-              toast.error(String(serverMsg));
-            }
-          } else {
+        // Try to surface validation/errors if present
+        if (data?.errors) {
+          try {
+            const flat = Object.values(data.errors)
+              .flat()
+              .map((v) => (Array.isArray(v) ? v.join(" ") : String(v)))
+              .join(" ");
+            toast.dismiss(loadingId);
+            toast.error(flat || String(serverMsg));
+          } catch {
+            toast.dismiss(loadingId);
             toast.error(String(serverMsg));
           }
+        } else {
+          toast.dismiss(loadingId);
+          toast.error(String(serverMsg));
         }
-      } else {
-        // fallback: show entire payload text if nothing known
-        toast.success("Shipment update response received");
       }
-
-      // refresh online orders list (non-fatal)
-      try {
-        await dispatch(fetchOnlineOrders());
-      } catch (e) {
-        // ignore refresh errors
-      }
-    } catch (err: any) {
-      // Prefer server-provided message if available
-      const serverData = err?.response?.data;
-      if (serverData) {
-        // if serverData.message exists show that, otherwise stringify core parts
-        const msg = serverData.message ?? (() => {
-          try {
-            return JSON.stringify(serverData);
-          } catch {
-            return String(serverData);
-          }
-        })();
-        toast.error(String(msg));
-      } else {
-        const msg = err?.message ?? "Error updating shipment status";
-        toast.error(String(msg));
-      }
-    } finally {
-      // reset and close
-      setShipmentOpen(false);
-      setShipmentNote("");
-      setShipmentUrl("");
-      setShipmentStatus("Order Confirmed");
-      setShipmentOrder(null);
+    } else {
+      // unknown shaped response -> show generic success
+      toast.dismiss(loadingId);
+      toast.success("Shipment update response received");
     }
-  };
 
+    // refresh online orders list (non-fatal)
+    try {
+      await dispatch(fetchOnlineOrders());
+    } catch (e) {
+      // ignore refresh errors but log for debugging
+      // console.warn("Failed to refresh online orders after shipment update", e);
+    }
+  } catch (err: any) {
+    // Prefer server-provided message when possible
+    toast.dismiss(loadingId);
+    const serverData = err?.response?.data;
+    if (serverData) {
+      const msg = serverData.message ?? (() => {
+        try {
+          return JSON.stringify(serverData);
+        } catch {
+          return String(serverData);
+        }
+      })();
+      toast.error(String(msg));
+    } else {
+      const msg = err?.message ?? "Error updating shipment status";
+      toast.error(String(msg));
+    }
+  } finally {
+    // cleanup & reset UI state
+    setShipmentOpen(false);
+    setShipmentNote("");
+    setShipmentUrl("");
+    setShipmentStatus("Order Confirmed");
+    if (typeof setShipmentOrder === "function") setShipmentOrder(null);
+  }
+};
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
       <Toaster position="top-right" reverseOrder={false} />

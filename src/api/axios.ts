@@ -1,11 +1,11 @@
 // src/lib/axios.ts
 import axios, { AxiosError, AxiosInstance } from "axios";
 
-export const BASE_URL_1 = "http://192.168.29.8:8000/api";
-// const BASE_URL_2 ="https://9nutsapi.nearbydoctors.in/public/api";
+// export const BASE_URL_1 = "http://192.168.29.8:8000/api";
+const BASE_URL_2 ="https://9nutsapi.nearbydoctors.in/public/api";
 
 const api: AxiosInstance = axios.create({
-  baseURL: BASE_URL_1,
+  baseURL: BASE_URL_2,
   timeout: 30_000,
   headers: {
     "Content-Type": "application/json",
