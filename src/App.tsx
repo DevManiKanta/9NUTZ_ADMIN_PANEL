@@ -40,7 +40,7 @@ import DailyInventory from "./pages/DailyInventory";
 import SlocStock from "./pages/CommingSoon";
 import Settlement from "./pages/Settlement";
 import PreShortSupply from "./pages/PreShortSupply";
-import GstCacheProfitability from "./pages/GstCacheProfitability";
+import SalesBanner from "./pages/SalesBanner";
 import GstReport from "./pages/GstReport";
 import GstProfitability from "./pages/GstProfitability";
 import GstCacheReport from "./pages/GstCacheReport";
@@ -373,11 +373,11 @@ const App = () => (
 
              {/* ---------- GST routes (new) ---------- */}
             <Route
-              path="/Gst/GstCacheProfitability"
+              path="/Sales-Banner"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <GstCacheProfitability />
+                    <SalesBanner />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

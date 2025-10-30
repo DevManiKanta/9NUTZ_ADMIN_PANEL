@@ -301,8 +301,11 @@
 
 // src/components/DashboardHeader.tsx
 // src/components/DashboardHeader.tsx
+
+
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Menu,
   Search,
   Plus,
   Bell,
@@ -371,7 +374,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
 
   const logoSrc = buildLogoUrl(logoRaw) || IMAGES.Nutz;
   const siteName = settings?.site_name || "9nutz";
-  const ProfileName=settings?.name || "Admin";
+  const ProfileName = settings?.name || "Admin";
 
   const { logout, user } = useAuth();
 
@@ -443,7 +446,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
   const handleLogout = async () => {
     try {
       await logout();
-      localStorage.clear()
+      localStorage.clear();
     } catch (err) {
       console.error("Logout failed", err);
     } finally {
@@ -627,5 +630,6 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onMenuToggle, searchValue, onS
 };
 
 export default DashboardHeader;
+
 
 

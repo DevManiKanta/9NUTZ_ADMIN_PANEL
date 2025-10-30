@@ -282,6 +282,7 @@ const navigationItems = [
   // { id: "banners", label: "Banners", path: "/BannersPage", icon: Image },
   { id: "inventory-management", label: "Inventory Management", path: "/sku/Inventory-Management", icon: ClipboardList },
   { id: "vendor-management", label: "Vendor Management", path: "/sku/vendor-Management", icon: Building2 },
+    { id: "Sales-Banner", label: "Sales-Banner", path: "/Sales-Banner", icon: Building2 },
 ];
 
 const settingsChildren = [
