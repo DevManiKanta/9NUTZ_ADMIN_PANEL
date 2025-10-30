@@ -1,4 +1,6 @@
 
+
+
 // import React, { useEffect, useRef, useState } from "react";
 // import { Card } from "@/components/ui/card";
 // import { Button } from "@/components/ui/button";
@@ -22,7 +24,7 @@
 //   [k: string]: any;
 // };
 
-// type CategoryItem = { id: string; name: string };
+// type CategoryItem = { id: string; name: string; image_url?: string | null };
 
 // const defaultForm = {
 //   name: "",
@@ -64,6 +66,20 @@
 //   const descInputRef = useRef<HTMLInputElement | null>(null);
 //   const drawerRef = useRef<HTMLDivElement | null>(null);
 //   const viewDrawerRef = useRef<HTMLDivElement | null>(null);
+
+//   // ---------- CATEGORY DRAWER state ----------
+//   const [isCatDrawerOpen, setIsCatDrawerOpen] = useState(false);
+//   const [catForm, setCatForm] = useState<{ name: string; imagePreview?: string }>({ name: "", imagePreview: "" });
+//   const [catEditingId, setCatEditingId] = useState<string | number | null>(null);
+//   const [catSubmitting, setCatSubmitting] = useState(false);
+//   const [catLoading, setCatLoading] = useState(false);
+//   const [catFile, setCatFile] = useState<File | null>(null);
+//   const catFileRef = useRef<HTMLInputElement | null>(null);
+//   const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
+//   // ---------- PRODUCTS PAGINATION ----------
+//   const PER_PAGE = 10; // <--- show 10 products per page as requested
+//   const [page, setPage] = useState<number>(1);
 
 //   // ---------------- helpers ----------------
 //   const safeTrim = (v: unknown): string | undefined => {
@@ -132,15 +148,14 @@
 
 //   // ---------------- API ----------------
 //   const fetchCategories = async () => {
+//     setCatLoading(true);
 //     try {
 //       const res = await api.get("/admin/categories/show");
-//       const body = res.data.data ?? res;
+//       const body = res.data ?? res;
 //       let rows: any[] = [];
 //       if (Array.isArray(body)) rows = body;
-//       else if (Array.isArray(body.data)) {
-//         if (Array.isArray(body.data.data)) rows = body.data.data;
-//         else rows = body.data;
-//       } else {
+//       else if (Array.isArray(body.data)) rows = body.data;
+//       else {
 //         const arr = Object.values(body || {}).find((v) => Array.isArray(v));
 //         if (Array.isArray(arr)) rows = arr as any[];
 //       }
@@ -149,7 +164,8 @@
 //         .map((r) => {
 //           const id = String(r.id ?? r._id ?? r.category_id ?? r.categoryId ?? r.id?.toString?.() ?? "").trim();
 //           const name = String(r.name ?? r.title ?? r.label ?? r.category_name ?? id ?? "");
-//           return id ? { id, name } : null;
+//           const image_url = (r.image_url ?? r.image ?? r.imageUrl ?? null) as string | null;
+//           return id ? { id, name, image_url } : null;
 //         })
 //         .filter(Boolean) as CategoryItem[];
 
@@ -159,6 +175,8 @@
 //     } catch (err: any) {
 //       console.error("fetchCategories failed:", err, err?.response?.data);
 //       toast.error("Failed to load categories (dropdown may be incomplete)");
+//     } finally {
+//       setCatLoading(false);
 //     }
 //   };
 
@@ -180,6 +198,7 @@
 
 //       const normalized = rows.map((r: any) => normalizeProduct(r));
 //       setProducts(normalized);
+//       setPage(1); // reset page on load
 //     } catch (err: any) {
 //       console.error("fetchProducts failed:", err, err?.response?.data);
 //       const message = err?.response?.data?.message ?? err?.message ?? "Failed to load products";
@@ -188,6 +207,36 @@
 //     } finally {
 //       setIsLoading(false);
 //     }
+//   };
+
+//   // category CRUD API (send FormData when image present)
+//   const createCategoryApi = async (payload: { name: string; file?: File | null }) => {
+//     if (payload.file) {
+//       const fd = new FormData();
+//       fd.append("name", String(payload.name));
+//       fd.append("image", payload.file, payload.file.name);
+//       const res = await api.post("/admin/categories/add", fd, { headers: { "Content-Type": "multipart/form-data" } });
+//       return res.data ?? res;
+//     } else {
+//       const res = await api.post("/admin/categories/add", { name: payload.name });
+//       return res.data ?? res;
+//     }
+//   };
+
+//   const updateCategoryApi = async (id: string | number, payload: { name: string; file?: File | null }) => {
+//     // many backends accept FormData for update; use FormData to support image upload
+//     const fd = new FormData();
+//     fd.append("name", String(payload.name));
+//     // if backend expects a method override, uncomment next line:
+//     // fd.append("_method", "PUT");
+//     if (payload.file) fd.append("image", payload.file, payload.file.name);
+//     const res = await api.post(`/admin/categories/update/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+//     return res.data ?? res;
+//   };
+
+//   const deleteCategoryApi = async (id: string | number) => {
+//     const res = await api.delete(`/admin/categories/delete/${id}`);
+//     return res.data ?? res;
 //   };
 
 //   // create: append description correctly
@@ -257,7 +306,6 @@
 //       discount_amount: safeTrim(p.discount_amount) ?? String(p.discount_amount ?? ""),
 //       discount_price: safeTrim(p.discount_price) ?? String(p.discount_price ?? ""),
 //       image: (p.image_url ?? p.image ?? "") as string,
-//       // load actual description from product (if present)
 //       description: safeTrim((p as any).description ?? (p as any).dscription ?? "") ?? "",
 //     });
 //     setImageFile(null);
@@ -297,7 +345,7 @@
 //       return;
 //     }
 //     setImageFile(file);
-//     setErrors((prev) => ({ ...prev, image: undefined })); // clear any prior image error
+//     setErrors((prev) => ({ ...prev, image: undefined }));
 //     const reader = new FileReader();
 //     reader.onload = () => setForm((f) => ({ ...f, image: reader.result as string }));
 //     reader.readAsDataURL(file);
@@ -306,7 +354,6 @@
 //   // ---------- submit (create/update) with optimistic UI ----------
 //   const handleSubmit = async (e?: React.FormEvent) => {
 //     if (e) e.preventDefault();
-//     // clear image error at start
 //     setErrors((prev) => ({ ...prev, image: undefined }));
 
 //     if (!validateForm()) {
@@ -314,7 +361,6 @@
 //       return;
 //     }
 
-//     // Client-side pre-check: when creating, ensure an image was provided (either a file or an existing data-url)
 //     const hasImageOnClient = !!(imageFile || (form.image && String(form.image).trim()));
 //     if (!isEditMode && !hasImageOnClient) {
 //       setErrors((prev) => ({ ...prev, image: "Image is required" }));
@@ -343,7 +389,6 @@
 //       discount_amount: discount_amount_trimmed,
 //       grams: grams_trimmed,
 //       category: categoryToSend as any,
-//       // include description if present (this is the important fix)
 //       ...(descriptionTrimmed ? { description: descriptionTrimmed } : {}),
 //     };
 
@@ -379,7 +424,7 @@
 //         resetForm();
 //       } catch (err: any) {
 //         console.error("handleSubmit (update) error:", err, err?.response?.data);
-//         setProducts(prev); // rollback
+//         setProducts(prev);
 //         const rdata = err?.response?.data;
 //         if (rdata && typeof rdata === "object") {
 //           if (rdata.errors && typeof rdata.errors === "object") {
@@ -405,7 +450,7 @@
 //         setImageFile(null);
 //       }
 //     } else {
-//       // Optimistic create: add a temporary product immediately
+//       // Optimistic create
 //       const tempId = `local-${Date.now()}`;
 //       const tempProd: Product = normalizeProduct({ id: tempId, ...payload, image: form.image ?? undefined });
 //       setProducts((prev) => [tempProd, ...prev]);
@@ -472,7 +517,6 @@
 //     if (confirmDeleteId == null) return;
 //     setIsDeleting(true);
 
-//     // optimistic delete: remove locally and attempt API request; rollback on failure
 //     const prev = products;
 //     setProducts((cur) => cur.filter((p) => String(p.id) !== String(confirmDeleteId)));
 
@@ -513,25 +557,150 @@
 //         if (isDrawerOpen) setIsDrawerOpen(false);
 //         if (isViewOpen) setIsViewOpen(false);
 //         if (confirmDeleteId) setConfirmDeleteId(null);
+//         if (isCatDrawerOpen) {
+//           setIsCatDrawerOpen(false);
+//           setCatEditingId(null);
+//         }
 //       }
 //     };
 //     window.addEventListener("keydown", onKey);
 //     return () => window.removeEventListener("keydown", onKey);
-//   }, [isDrawerOpen, isViewOpen, confirmDeleteId]);
+//   }, [isDrawerOpen, isViewOpen, confirmDeleteId, isCatDrawerOpen]);
 
-//   // ---------------- Render ----------------
+//   // ---------- Category Drawer handlers ----------
+//   const openCatDrawer = () => {
+//     setCatForm({ name: "", imagePreview: "" });
+//     setCatEditingId(null);
+//     setCatFile(null);
+//     if (catFileRef.current) catFileRef.current.value = "";
+//     setIsCatDrawerOpen(true);
+//   };
+
+//   const openCatEdit = (c: CategoryItem) => {
+//     setCatEditingId(c.id);
+//     setCatForm({ name: c.name ?? "", imagePreview: c.image_url ?? "" });
+//     setCatFile(null);
+//     if (catFileRef.current) catFileRef.current.value = "";
+//     setIsCatDrawerOpen(true);
+//   };
+
+//   const handleCatImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     const f = e.target.files?.[0] ?? null;
+//     if (!f) {
+//       setCatFile(null);
+//       setCatForm((s) => ({ ...s, imagePreview: "" }));
+//       return;
+//     }
+//     if (!f.type || !f.type.startsWith("image/")) {
+//       toast.error("Selected file is not an image. Please choose a valid image file.");
+//       if (catFileRef.current) catFileRef.current.value = "";
+//       setCatFile(null);
+//       setCatForm((s) => ({ ...s, imagePreview: "" }));
+//       return;
+//     }
+//     if (f.size > MAX_IMAGE_BYTES) {
+//       toast.error("Image too large (max 5MB). Please select a smaller file.");
+//       if (catFileRef.current) catFileRef.current.value = "";
+//       setCatFile(null);
+//       setCatForm((s) => ({ ...s, imagePreview: "" }));
+//       return;
+//     }
+//     setCatFile(f);
+//     const r = new FileReader();
+//     r.onload = () => setCatForm((s) => ({ ...s, imagePreview: String(r.result ?? "") }));
+//     r.readAsDataURL(f);
+//   };
+
+//   const submitCategory = async (ev?: React.FormEvent) => {
+//     ev?.preventDefault();
+//     const name = String(catForm.name ?? "").trim();
+//     if (!name) {
+//       toast.error("Category name is required");
+//       return;
+//     }
+//     setCatSubmitting(true);
+//     try {
+//       if (catEditingId) {
+//         const res = await updateCategoryApi(catEditingId, { name, file: catFile ?? undefined });
+//         const body = res.data ?? res;
+//         if (body && body.status === false) throw new Error(String(body.message ?? "Update failed"));
+//         toast.success("Category updated");
+//       } else {
+//         const res = await createCategoryApi({ name, file: catFile ?? undefined });
+//         const body = res.data ?? res;
+//         if (body && body.status === false) throw new Error(String(body.message ?? "Create failed"));
+//         toast.success("Category created");
+//       }
+//       await fetchCategories();
+//       setIsCatDrawerOpen(false);
+//       setCatForm({ name: "", imagePreview: "" });
+//       setCatEditingId(null);
+//       setCatFile(null);
+//       if (catFileRef.current) catFileRef.current.value = "";
+//     } catch (err: any) {
+//       console.error("category CRUD error:", err, err?.response?.data);
+//       const msg = err?.response?.data?.message ?? err?.message ?? "Category save failed";
+//       toast.error(String(msg));
+//     } finally {
+//       setCatSubmitting(false);
+//     }
+//   };
+
+//   const removeCategory = async (id: string | number) => {
+//     const ok = window.confirm("Delete this category? This action cannot be undone.");
+//     if (!ok) return;
+//     try {
+//       await deleteCategoryApi(id);
+//       toast.success("Category deleted");
+//       await fetchCategories();
+//     } catch (err: any) {
+//       console.error("delete category failed:", err);
+//       const msg = err?.response?.data?.message ?? err?.message ?? "Delete failed";
+//       toast.error(String(msg));
+//     }
+//   };
+
+//   // ---------- Products client-side pagination helpers ----------
+//   const totalPages = Math.max(1, Math.ceil(products.length / PER_PAGE));
+//   const paginatedProducts = products.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+//   const goToPage = (p: number) => {
+//     const next = Math.max(1, Math.min(totalPages, p));
+//     setPage(next);
+//     // scroll to top of list for better UX
+//     window.scrollTo({ top: 0, behavior: "smooth" });
+//   };
+
+//   const renderPageNumbers = () => {
+//     const pages: number[] = [];
+//     const maxButtons = 7;
+//     let start = Math.max(1, page - Math.floor(maxButtons / 2));
+//     let end = start + maxButtons - 1;
+//     if (end > totalPages) {
+//       end = totalPages;
+//       start = Math.max(1, end - maxButtons + 1);
+//     }
+//     for (let p = start; p <= end; p++) pages.push(p);
+//     return pages;
+//   };
+
 //   return (
 //     <>
 //       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-//       {/* full width container */}
 //       <div className="w-full px-4 md:px-6 lg:px-8">
 //         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 w-full">
 //           <div>
 //             <h1 className="text-2xl sm:text-3xl font-bold">Products</h1>
 //           </div>
+
 //           <div className="flex items-center gap-2 w-full sm:w-auto">
 //             <Button variant="ghost" onClick={() => void handleRefresh()} aria-label="Refresh products" className="ml-2">
 //               <RefreshCw className="h-4 w-4" />
+//             </Button>
+
+//             {/* Add Category button beside Add Product */}
+//             <Button onClick={() => openCatDrawer()} className="ml-2">
+//               <Plus className="h-4 w-4 mr-2" /> Add Category
 //             </Button>
 
 //             <Button onClick={() => openAddDrawer()} className="ml-2">
@@ -541,7 +710,6 @@
 //         </div>
 
 //         <Card className="shadow-sm w-full">
-//           {/* responsive wrapper */}
 //           <div className="w-full overflow-x-auto">
 //             <table className="w-full min-w-[700px] md:min-w-full divide-y divide-slate-200">
 //               <thead className="bg-slate-50">
@@ -575,9 +743,9 @@
 //                     </td>
 //                   </tr>
 //                 ) : (
-//                   products.map((p, i) => (
+//                   paginatedProducts.map((p, i) => (
 //                     <tr key={String(p.id)}>
-//                       <td className="px-4 py-3 text-sm align-middle">{i + 1}</td>
+//                       <td className="px-4 py-3 text-sm align-middle">{(page - 1) * PER_PAGE + i + 1}</td>
 
 //                       <td className="px-4 py-3 align-middle">
 //                         <div className="w-12 h-12 rounded-full overflow-hidden bg-white border">
@@ -634,7 +802,6 @@
 //                             <Trash2 className="w-4 h-4" />
 //                           </button>
 
-//                           {/* optionally view on very small screens */}
 //                           <button
 //                             onClick={() => openView(p)}
 //                             title="View"
@@ -652,14 +819,52 @@
 //             </table>
 //           </div>
 
-//           {/* footer: summary */}
+//           {/* footer: summary + pagination */}
 //           <div className="px-4 py-3 border-t flex items-center justify-between">
-//             <div className="text-sm text-slate-600">Showing {products.length} products</div>
-//             <div className="text-sm text-slate-800 font-medium">Total products: {products.length}</div>
+//             <div className="text-sm text-slate-600">Showing {(page - 1) * PER_PAGE + 1} - {Math.min(page * PER_PAGE, products.length)} of {products.length} products</div>
+
+//             {/* Tailwind pagination */}
+//             <nav className="flex items-center gap-2" aria-label="Pagination">
+//               <button
+//                 onClick={() => goToPage(page - 1)}
+//                 disabled={page === 1}
+//                 className="px-3 py-1 rounded border bg-white hover:bg-slate-50 disabled:opacity-50"
+//               >
+//                 Previous
+//               </button>
+
+//               <div className="hidden sm:flex items-center gap-1">
+//                 {renderPageNumbers().map((p) => {
+//                   const isActive = p === page;
+//                   return (
+//                     <button
+//                       key={p}
+//                       onClick={() => goToPage(p)}
+//                       className={`px-3 py-1 rounded ${isActive ? "bg-slate-800 text-white" : "bg-white border hover:bg-slate-50"}`}
+//                       aria-current={isActive ? "page" : undefined}
+//                     >
+//                       {p}
+//                     </button>
+//                   );
+//                 })}
+//               </div>
+
+//               <div className="sm:hidden text-sm text-slate-700 px-2">
+//                 {page} / {totalPages}
+//               </div>
+
+//               <button
+//                 onClick={() => goToPage(page + 1)}
+//                 disabled={page === totalPages}
+//                 className="px-3 py-1 rounded border bg-white hover:bg-slate-50 disabled:opacity-50"
+//               >
+//                 Next
+//               </button>
+//             </nav>
 //           </div>
 //         </Card>
 
-//         {/* ----------- Add / Edit Drawer ----------- */}
+//         {/* ----------- Add / Edit Product Drawer ----------- */}
 //         {isDrawerOpen && (
 //           <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={isEditMode ? "Edit product" : "Add products"}>
 //             <div
@@ -785,6 +990,140 @@
 //           </div>
 //         )}
 
+//         {/* ---------- Category Drawer (full CRUD + image) ---------- */}
+//         {isCatDrawerOpen && (
+//           <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Category management">
+//             <div
+//               className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+//               onClick={() => {
+//                 setIsCatDrawerOpen(false);
+//                 setCatEditingId(null);
+//                 setCatForm({ name: "", imagePreview: "" });
+//                 setCatFile(null);
+//                 if (catFileRef.current) catFileRef.current.value = "";
+//               }}
+//               aria-hidden="true"
+//             />
+
+//             <aside
+//               className="fixed top-0 right-0 h-screen bg-white shadow-2xl overflow-auto rounded-l-2xl transform transition-transform duration-300 ease-in-out md:w-96 w-full"
+//               style={{ transform: isCatDrawerOpen ? "translateX(0)" : "translateX(100%)" }}
+//             >
+//               <div className="flex items-start justify-between p-6 border-b">
+//                 <div>
+//                   <h3 className="text-xl font-semibold">Categories</h3>
+//                 </div>
+//                 <button
+//                   onClick={() => {
+//                     setIsCatDrawerOpen(false);
+//                     setCatEditingId(null);
+//                     setCatForm({ name: "", imagePreview: "" });
+//                     setCatFile(null);
+//                     if (catFileRef.current) catFileRef.current.value = "";
+//                   }}
+//                   aria-label="Close category drawer"
+//                   className="inline-flex items-center justify-center h-10 w-10 rounded-md hover:bg-slate-100"
+//                 >
+//                   <X className="h-5 w-5" />
+//                 </button>
+//               </div>
+
+//               <div className="p-6 space-y-6">
+//                 {/* Create / Edit form */}
+//                 <form onSubmit={submitCategory} className="space-y-3">
+//                   <div>
+//                     <label className="block text-sm font-medium mb-1">Name</label>
+//                     <input
+//                       value={catForm.name}
+//                       onChange={(e) => setCatForm((s) => ({ ...s, name: e.target.value }))}
+//                       className="block w-full border rounded-md p-2"
+//                       placeholder="e.g. Beverages"
+//                     />
+//                   </div>
+
+//                   <div>
+//                     <label className="block text-sm font-medium mb-1">Image {catEditingId ? "(optional to replace)" : "(required)"}</label>
+//                     <div className="flex items-start gap-3">
+//                       <div className="w-20 h-20 rounded-md overflow-hidden bg-slate-100 border flex items-center justify-center">
+//                         {catForm.imagePreview ? (
+//                           <img src={catForm.imagePreview} alt={catForm.name || "preview"} className="w-full h-full object-cover" />
+//                         ) : (
+//                           <div className="text-xs text-slate-400">No image</div>
+//                         )}
+//                       </div>
+
+//                       <div className="flex-1">
+//                         <input ref={catFileRef} type="file" accept="image/*" onChange={handleCatImageChange} className="block w-full text-sm" />
+//                         <p className="text-xs text-slate-400 mt-2">Max 5MB. Square images work best. {catEditingId ? "Leave empty to keep existing image." : ""}</p>
+//                       </div>
+//                     </div>
+//                   </div>
+
+//                   <div className="flex justify-end gap-2">
+//                     {catEditingId && (
+//                       <button
+//                         type="button"
+//                         onClick={() => {
+//                           setCatEditingId(null);
+//                           setCatForm({ name: "", imagePreview: "" });
+//                           setCatFile(null);
+//                           if (catFileRef.current) catFileRef.current.value = "";
+//                         }}
+//                         className="px-3 py-2 rounded-md border"
+//                       >
+//                         New
+//                       </button>
+//                     )}
+//                     <button type="submit" disabled={catSubmitting} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+//                       {catSubmitting ? (catEditingId ? "Saving..." : "Creating...") : catEditingId ? "Save" : "Create"}
+//                     </button>
+//                   </div>
+//                 </form>
+
+//                 {/* Categories list (compact, with thumbnails) */}
+//                 <div>
+//                   <div className="text-sm text-slate-600 mb-3">Available categories</div>
+//                   <div className="space-y-2">
+//                     {catLoading ? (
+//                       <div className="text-sm text-slate-500">Loading categories…</div>
+//                     ) : categories.length === 0 ? (
+//                       <div className="text-sm text-slate-500">No categories yet.</div>
+//                     ) : (
+//                       categories.map((c) => (
+//                         <div key={c.id} className="flex items-center justify-between gap-3 p-2 rounded border">
+//                           <div className="flex items-center gap-3 min-w-0">
+//                             <div className="w-10 h-10 rounded-full overflow-hidden bg-white border flex-shrink-0">
+//                               <img
+//                                 src={c.image_url ?? IMAGES.DummyImage}
+//                                 alt={c.name}
+//                                 className="w-full h-full object-cover"
+//                                 onError={(e) => {
+//                                   (e.currentTarget as HTMLImageElement).onerror = null;
+//                                   (e.currentTarget as HTMLImageElement).src = IMAGES.DummyImage;
+//                                 }}
+//                               />
+//                             </div>
+//                             <div className="text-sm text-slate-800 truncate">{c.name}</div>
+//                           </div>
+
+//                           <div className="flex items-center gap-2">
+//                             <button onClick={() => openCatEdit(c)} className="px-2 py-1 rounded border hover:bg-slate-50">
+//                               <Edit3 className="w-4 h-4" />
+//                             </button>
+//                             <button onClick={() => removeCategory(c.id)} className="px-2 py-1 rounded border hover:bg-red-50">
+//                               <Trash2 className="w-4 h-4 text-red-600" />
+//                             </button>
+//                           </div>
+//                         </div>
+//                       ))
+//                     )}
+//                   </div>
+//                 </div>
+//               </div>
+//             </aside>
+//           </div>
+//         )}
+
 //         {isViewOpen && selectedProduct && (
 //           <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Product details">
 //             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsViewOpen(false)} />
@@ -872,7 +1211,7 @@
 //     </>
 //   );
 // }
-
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -891,9 +1230,12 @@ type Product = {
   discount_price?: string;
   image?: string;
   image_url?: string;
+  // new: extra images array (could be strings or objects)
+  images?: Array<string | { id?: string | number; url?: string }>;
   category?: { id?: number | string; name?: string } | string | null;
   stock?: number | string | null;
   slug?: string;
+  video_url?: string | null; // <- NEW field
   [k: string]: any;
 };
 
@@ -908,6 +1250,7 @@ const defaultForm = {
   discount_price: "",
   image: "",
   description: "",
+  video_url: "", // <- include new field in default form
 };
 
 export default function Products(): JSX.Element {
@@ -927,9 +1270,15 @@ export default function Products(): JSX.Element {
 
   // form
   const [form, setForm] = useState({ ...defaultForm });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null); // main image
   const [errors, setErrors] = useState<Partial<Record<keyof typeof defaultForm, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // new: multiple additional images handling
+  const [existingExtraImages, setExistingExtraImages] = useState<Array<{ id?: string | number; url: string }>>([]); // from server when editing
+  const [removedExistingImageIds, setRemovedExistingImageIds] = useState<Array<string | number>>([]); // ids to remove on update
+  const [newExtraFiles, setNewExtraFiles] = useState<File[]>([]); // newly chosen files to upload as images[]
+  const [newExtraPreviews, setNewExtraPreviews] = useState<string[]>([]); // previews for the newExtraFiles
 
   // delete confirm modal
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | number | null>(null);
@@ -948,7 +1297,9 @@ export default function Products(): JSX.Element {
   const [catLoading, setCatLoading] = useState(false);
   const [catFile, setCatFile] = useState<File | null>(null);
   const catFileRef = useRef<HTMLInputElement | null>(null);
-  const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
+  // Server limit = 2048 KB => 2 * 1024 * 1024 bytes
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB
 
   // ---------- PRODUCTS PAGINATION ----------
   const PER_PAGE = 10; // <--- show 10 products per page as requested
@@ -1003,6 +1354,37 @@ export default function Products(): JSX.Element {
 
     const image_url_val = raw.image_url ?? raw.imageUrl ?? raw.image ?? undefined;
 
+    // New: try to read extra images (could be provided under different keys)
+    let imagesArr: Array<string | { id?: string | number; url?: string }> = [];
+    if (Array.isArray(raw.images)) {
+      imagesArr = raw.images;
+    } else if (Array.isArray(raw.extra_images)) {
+      imagesArr = raw.extra_images;
+    } else if (Array.isArray(raw.images_data)) {
+      imagesArr = raw.images_data;
+    } else if (raw.images && typeof raw.images === "string") {
+      try {
+        const parsed = JSON.parse(raw.images);
+        if (Array.isArray(parsed)) imagesArr = parsed;
+      } catch {
+        // ignore
+      }
+    }
+
+    // Normalize to objects with url
+    const normalizedImages = imagesArr
+      .map((it) => {
+        if (!it) return null;
+        if (typeof it === "string") return { url: String(it) };
+        if (typeof it === "object") {
+          const url = (it.url ?? it.path ?? it.image ?? it.image_url ?? "") as string;
+          const idVal = it.id ?? it.image_id ?? it._id ?? undefined;
+          return url ? { id: idVal, url: String(url) } : null;
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<{ id?: string | number; url: string }>;
+
     return {
       id,
       name: String(raw.name ?? raw.title ?? "Untitled"),
@@ -1012,9 +1394,11 @@ export default function Products(): JSX.Element {
       discount_price: safeTrim(raw.discount_price ?? raw.discountPrice) ?? "",
       image: imageVal,
       image_url: image_url_val,
+      images: normalizedImages.length ? (normalizedImages as any) : undefined,
       category,
       stock: raw.stock ?? raw.qty ?? null,
       slug: raw.slug ?? "",
+      video_url: raw.video_url ?? raw.videoUrl ?? null, // <- include video_url normalization
       ...raw,
     };
   }
@@ -1097,11 +1481,8 @@ export default function Products(): JSX.Element {
   };
 
   const updateCategoryApi = async (id: string | number, payload: { name: string; file?: File | null }) => {
-    // many backends accept FormData for update; use FormData to support image upload
     const fd = new FormData();
     fd.append("name", String(payload.name));
-    // if backend expects a method override, uncomment next line:
-    // fd.append("_method", "PUT");
     if (payload.file) fd.append("image", payload.file, payload.file.name);
     const res = await api.post(`/admin/categories/update/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
     return res.data ?? res;
@@ -1112,8 +1493,8 @@ export default function Products(): JSX.Element {
     return res.data ?? res;
   };
 
-  // create: append description correctly
-  const createProductApi = async (payload: Partial<Product>, file?: File | null) => {
+  // create: append description correctly, plus new images[] for extras
+  const createProductApi = async (payload: Partial<Product>, file?: File | null, extraFiles?: File[]) => {
     const fd = new FormData();
     if (payload.name !== undefined) fd.append("name", String(payload.name));
     if (payload.price !== undefined) fd.append("price", String(payload.price));
@@ -1122,13 +1503,28 @@ export default function Products(): JSX.Element {
     if (payload.grams !== undefined) fd.append("grams", String(payload.grams));
     if (payload.category !== undefined && payload.category !== null) fd.append("category", String(payload.category));
     if ((payload as any).description !== undefined) fd.append("description", String((payload as any).description));
+    if ((payload as any).video_url !== undefined && (payload as any).video_url !== null && String((payload as any).video_url).trim() !== "") {
+      fd.append("video_url", String((payload as any).video_url));
+    }
     if (file) fd.append("image", file);
+    // extra images
+    if (Array.isArray(extraFiles)) {
+      for (const f of extraFiles) {
+        fd.append("images[]", f);
+      }
+    }
     const res = await api.post(`${basePath}/add`, fd, { headers: { "Content-Type": "multipart/form-data" } });
     return res.data ?? res;
   };
 
-  // update: append description as well
-  const updateProductApi = async (id: string | number, payload: Partial<Product>, file?: File | null) => {
+  // update: append description as well, new images[] & remove_image_ids when needed
+  const updateProductApi = async (
+    id: string | number,
+    payload: Partial<Product>,
+    file?: File | null,
+    extraFiles?: File[],
+    removeImageIds?: Array<string | number>
+  ) => {
     const fd = new FormData();
     if (payload.name !== undefined) fd.append("name", String(payload.name));
     if (payload.price !== undefined) fd.append("price", String(payload.price));
@@ -1137,7 +1533,20 @@ export default function Products(): JSX.Element {
     if (payload.grams !== undefined) fd.append("grams", String(payload.grams));
     if (payload.category !== undefined && payload.category !== null) fd.append("category", String(payload.category));
     if ((payload as any).description !== undefined) fd.append("description", String((payload as any).description));
+    if ((payload as any).video_url !== undefined && (payload as any).video_url !== null && String((payload as any).video_url).trim() !== "") {
+      fd.append("video_url", String((payload as any).video_url));
+    }
     if (file) fd.append("image", file);
+    // append new extra images
+    if (Array.isArray(extraFiles)) {
+      for (const f of extraFiles) {
+        fd.append("images[]", f);
+      }
+    }
+    // append remove_image_ids if any (comma-separated string to match your API example)
+    if (Array.isArray(removeImageIds) && removeImageIds.length > 0) {
+      fd.append("remove_image_ids", removeImageIds.join(","));
+    }
     const res = await api.post(`${basePath}/update/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
     return res.data ?? res;
   };
@@ -1158,6 +1567,10 @@ export default function Products(): JSX.Element {
   const openAddDrawer = () => {
     setForm({ ...defaultForm });
     setImageFile(null);
+    setNewExtraFiles([]);
+    setNewExtraPreviews([]);
+    setExistingExtraImages([]);
+    setRemovedExistingImageIds([]);
     setErrors({});
     setIsEditMode(false);
     setEditingId(null);
@@ -1180,8 +1593,32 @@ export default function Products(): JSX.Element {
       discount_price: safeTrim(p.discount_price) ?? String(p.discount_price ?? ""),
       image: (p.image_url ?? p.image ?? "") as string,
       description: safeTrim((p as any).description ?? (p as any).dscription ?? "") ?? "",
+      video_url: safeTrim((p as any).video_url ?? (p as any).videoUrl ?? "") ?? "",
     });
     setImageFile(null);
+
+    // populate existing extra images if present
+    const extrasRaw = (p as any).images ?? (p as any).extra_images ?? (p as any).images_data ?? [];
+    let extras: Array<{ id?: string | number; url: string }> = [];
+    if (Array.isArray(extrasRaw)) {
+      extras = extrasRaw
+        .map((it: any) => {
+          if (!it) return null;
+          if (typeof it === "string") return { url: String(it) };
+          if (typeof it === "object") {
+            const url = it.url ?? it.path ?? it.image ?? it.image_url ?? "";
+            const idVal = it.id ?? it.image_id ?? it._id ?? undefined;
+            return url ? { id: idVal, url: String(url) } : null;
+          }
+          return null;
+        })
+        .filter(Boolean) as Array<{ id?: string | number; url: string }>;
+    }
+    setExistingExtraImages(extras);
+    setRemovedExistingImageIds([]);
+    setNewExtraFiles([]);
+    setNewExtraPreviews([]);
+
     setIsDrawerOpen(true);
     setTimeout(() => firstInputRef.current?.focus(), 120);
   };
@@ -1198,6 +1635,10 @@ export default function Products(): JSX.Element {
     setErrors({});
     setIsEditMode(false);
     setEditingId(null);
+    setExistingExtraImages([]);
+    setRemovedExistingImageIds([]);
+    setNewExtraFiles([]);
+    setNewExtraPreviews([]);
   };
 
   const validateForm = () => {
@@ -1212,9 +1653,13 @@ export default function Products(): JSX.Element {
   const handleImageChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
     const file = ev.target.files?.[0] ?? null;
     if (!file) return;
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = MAX_IMAGE_BYTES;
     if (file.size > maxSize) {
-      toast.error("Image too large (max 5MB)");
+      toast.error("Image too large (max 2MB)");
+      // clear input value if available
+      try {
+        (ev.currentTarget as HTMLInputElement).value = "";
+      } catch {}
       return;
     }
     setImageFile(file);
@@ -1222,6 +1667,76 @@ export default function Products(): JSX.Element {
     const reader = new FileReader();
     reader.onload = () => setForm((f) => ({ ...f, image: reader.result as string }));
     reader.readAsDataURL(file);
+  };
+
+  // ---------- new: handle additional multiple images selection ----------
+  const handleAdditionalImagesChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(ev.target.files ?? []);
+    if (!files.length) return;
+    const maxSize = MAX_IMAGE_BYTES;
+    const accepted: File[] = [];
+    const previews: string[] = [];
+
+    for (const f of files) {
+      if (!f.type || !f.type.startsWith("image/")) {
+        toast.error(`${f.name} is not an image. Skipping.`);
+        continue;
+      }
+      if (f.size > maxSize) {
+        toast.error(`${f.name} is too large (max 2MB). Skipping.`);
+        continue;
+      }
+      accepted.push(f);
+    }
+
+    if (accepted.length === 0) {
+      // clear input to avoid user confusion
+      try {
+        ev.currentTarget.value = "";
+      } catch {}
+      return;
+    }
+
+    // append them to current newExtraFiles
+    const mergedFiles = [...newExtraFiles, ...accepted].slice(0, 10); // limit to 10 new files for safety
+    // produce previews for the new files (only for the batch we added)
+    const readers: Promise<string>[] = accepted.map(
+      (f) =>
+        new Promise((res) => {
+          const r = new FileReader();
+          r.onload = () => res(String(r.result ?? ""));
+          r.readAsDataURL(f);
+        })
+    );
+
+    Promise.all(readers)
+      .then((resArr) => {
+        const mergedPreviews = [...newExtraPreviews, ...resArr].slice(0, 10);
+        setNewExtraFiles(mergedFiles);
+        setNewExtraPreviews(mergedPreviews);
+      })
+      .catch(() => {
+        // fallback: just store file names without previews
+        setNewExtraFiles(mergedFiles);
+      });
+
+    // clear input value to allow re-uploading same file if needed
+    ev.currentTarget.value = "";
+  };
+
+  const removeNewExtraAt = (index: number) => {
+    setNewExtraFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewExtraPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingExtraByIndex = (index: number) => {
+    const toRemove = existingExtraImages[index];
+    if (!toRemove) return;
+    // if it has an id, add to removedExistingImageIds
+    if (toRemove.id != null) {
+      setRemovedExistingImageIds((prev) => [...prev, toRemove.id as string | number]);
+    }
+    setExistingExtraImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   // ---------- submit (create/update) with optimistic UI ----------
@@ -1247,6 +1762,7 @@ export default function Products(): JSX.Element {
     const discount_amount_trimmed = safeTrim(form.discount_amount);
     const grams_trimmed = safeTrim(form.grams);
     const descriptionTrimmed = safeTrim(form.description) ?? "";
+    const videoUrlTrimmed = safeTrim(form.video_url) ?? "";
 
     let categoryToSend: string | number | undefined = undefined;
     if (form.category !== "" && form.category != null) {
@@ -1263,6 +1779,7 @@ export default function Products(): JSX.Element {
       grams: grams_trimmed,
       category: categoryToSend as any,
       ...(descriptionTrimmed ? { description: descriptionTrimmed } : {}),
+      ...(videoUrlTrimmed ? { video_url: videoUrlTrimmed } : {}), // <- include video_url in payload when present
     };
 
     setIsSubmitting(true);
@@ -1274,7 +1791,7 @@ export default function Products(): JSX.Element {
       setProducts((cur) => cur.map((p) => (String(p.id) === String(editingId) ? { ...p, ...updatedLocal } : p)));
 
       try {
-        const res = await updateProductApi(editingId, payload, imageFile);
+        const res = await updateProductApi(editingId, payload, imageFile, newExtraFiles, removedExistingImageIds);
         const body = res.data ?? res;
         if (body && body.status === false) {
           const msg = body.message ?? "Update failed";
@@ -1321,15 +1838,18 @@ export default function Products(): JSX.Element {
       } finally {
         setIsSubmitting(false);
         setImageFile(null);
+        setNewExtraFiles([]);
+        setNewExtraPreviews([]);
+        setRemovedExistingImageIds([]);
       }
     } else {
       // Optimistic create
       const tempId = `local-${Date.now()}`;
-      const tempProd: Product = normalizeProduct({ id: tempId, ...payload, image: form.image ?? undefined });
+      const tempProd: Product = normalizeProduct({ id: tempId, ...payload, image: form.image ?? undefined, images: newExtraPreviews, video_url: payload.video_url ?? undefined });
       setProducts((prev) => [tempProd, ...prev]);
 
       try {
-        const res = await createProductApi(payload, imageFile);
+        const res = await createProductApi(payload, imageFile, newExtraFiles);
         const body = res.data ?? res;
 
         if (body && body.status === false) {
@@ -1378,6 +1898,8 @@ export default function Products(): JSX.Element {
       } finally {
         setIsSubmitting(false);
         setImageFile(null);
+        setNewExtraFiles([]);
+        setNewExtraPreviews([]);
       }
     }
   };
@@ -1472,7 +1994,7 @@ export default function Products(): JSX.Element {
       return;
     }
     if (f.size > MAX_IMAGE_BYTES) {
-      toast.error("Image too large (max 5MB). Please select a smaller file.");
+      toast.error("Image too large (max 2MB). Please select a smaller file.");
       if (catFileRef.current) catFileRef.current.value = "";
       setCatFile(null);
       setCatForm((s) => ({ ...s, imagePreview: "" }));
@@ -1640,7 +2162,7 @@ export default function Products(): JSX.Element {
 
                       <td className="px-4 py-3 text-sm text-slate-600 align-middle hidden sm:table-cell">
                         {p.category && typeof p.category === "object"
-                          ? `${(p.category as any).name ?? "-"}`
+                          ? `${(p.category as any).name ?? "-"}` 
                           : `${p.category ?? "-"}`}
                       </td>
 
@@ -1652,9 +2174,7 @@ export default function Products(): JSX.Element {
                         <div>{p.discount_price ? `₹ ${p.discount_price}` : "-"}</div>
                         {p.discount_amount && <div className="text-xs text-slate-400">Saved {p.discount_amount}</div>}
                       </td>
-
                       <td className="px-4 py-3 text-sm align-middle hidden lg:table-cell">{p.stock ?? "-"}</td>
-
                       <td className="px-4 py-3 text-sm text-right align-middle">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -1665,7 +2185,6 @@ export default function Products(): JSX.Element {
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
-
                           <button
                             onClick={() => askDelete(p.id)}
                             title="Delete"
@@ -1674,7 +2193,6 @@ export default function Products(): JSX.Element {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-
                           <button
                             onClick={() => openView(p)}
                             title="View"
@@ -1691,11 +2209,9 @@ export default function Products(): JSX.Element {
               </tbody>
             </table>
           </div>
-
           {/* footer: summary + pagination */}
           <div className="px-4 py-3 border-t flex items-center justify-between">
             <div className="text-sm text-slate-600">Showing {(page - 1) * PER_PAGE + 1} - {Math.min(page * PER_PAGE, products.length)} of {products.length} products</div>
-
             {/* Tailwind pagination */}
             <nav className="flex items-center gap-2" aria-label="Pagination">
               <button
@@ -1842,11 +2358,71 @@ export default function Products(): JSX.Element {
                     {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
                   </div>
 
+                  {/* NEW FIELD: Video URL */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Video URL</label>
+                    <input
+                      value={form.video_url}
+                      onChange={(e) => setForm((f) => ({ ...f, video_url: e.target.value }))}
+                      className="block w-full border rounded-md p-2"
+                      placeholder="https://www.youtube.com/watch?v="
+                    />
+                    <p className="text-xs text-slate-400 mt-1">Optional: add a video URL (YouTube, Vimeo, or direct video link). It will be sent to the API as <code>video_url</code>.</p>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium mb-1">Upload Image</label>
                     <input type="file" accept="image/*" onChange={handleImageChange} className="block w-full text-sm" />
-                    <p className="text-xs text-slate-400 mt-1">If you don't upload, existing image_url will stay.</p>
                     {errors.image && <p className="text-xs text-red-500 mt-1">{errors.image}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Additional images(Atleast 4  images )</label>
+                    <input type="file" accept="image/*" multiple onChange={handleAdditionalImagesChange} className="block w-full text-sm" />
+                    {existingExtraImages.length > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {existingExtraImages.map((img, idx) => (
+                          <div key={String(img.id ?? img.url)} className="relative w-full h-20 rounded-md overflow-hidden border">
+                            <img
+                              src={/^https?:\/\//.test(img.url) ? img.url : img.url}
+                              alt={`extra-${idx}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).onerror = null;
+                                (e.currentTarget as HTMLImageElement).src = IMAGES.DummyImage;
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeExistingExtraByIndex(idx)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-white/80 hover:bg-white"
+                              title="Remove"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* show newly selected extra images previews */}
+                    {newExtraPreviews.length > 0 && (
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {newExtraPreviews.map((p, idx) => (
+                          <div key={idx} className="relative w-full h-20 rounded-md overflow-hidden border">
+                            <img src={p} alt={`new-extra-${idx}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeNewExtraAt(idx)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-white/80 hover:bg-white"
+                              title="Remove"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-end gap-3">
@@ -1927,7 +2503,7 @@ export default function Products(): JSX.Element {
 
                       <div className="flex-1">
                         <input ref={catFileRef} type="file" accept="image/*" onChange={handleCatImageChange} className="block w-full text-sm" />
-                        <p className="text-xs text-slate-400 mt-2">Max 5MB. Square images work best. {catEditingId ? "Leave empty to keep existing image." : ""}</p>
+                        <p className="text-xs text-slate-400 mt-2">Max 2MB. Square images work best. {catEditingId ? "Leave empty to keep existing image." : ""}</p>
                       </div>
                     </div>
                   </div>
@@ -2049,6 +2625,18 @@ export default function Products(): JSX.Element {
                         : (selectedProduct.category ?? "-")}
                     </div>
                   </div>
+
+                  {/* Show video URL if present */}
+                  {selectedProduct.video_url ? (
+                    <div>
+                      <div className="text-sm font-medium text-slate-500">Video URL</div>
+                      <div className="mt-1 rounded-md border p-2 bg-gray-50 break-all">
+                        <a href={selectedProduct.video_url} target="_blank" rel="noreferrer" className="text-indigo-600 underline">
+                          {selectedProduct.video_url}
+                        </a>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center justify-end mt-4">
@@ -2058,7 +2646,6 @@ export default function Products(): JSX.Element {
             </aside>
           </div>
         )}
-
         {/* ---------- Delete confirmation mini-modal ---------- */}
         {confirmDeleteId != null && (
           <div className="fixed inset-0 z-60 flex items-center justify-center px-4">
@@ -2084,11 +2671,6 @@ export default function Products(): JSX.Element {
     </>
   );
 }
-
-
-
-
-
 
 
 
