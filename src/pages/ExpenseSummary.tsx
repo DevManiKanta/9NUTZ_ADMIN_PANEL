@@ -13,9 +13,11 @@ import {
   Loader2,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import api from "@/api/axios";
 
-const API_BASE = "https://9nutsapi.nearbydoctors.in/public/api";
-const TOKEN_KEY = localStorage.getItem("token")
+const API = api;
+const API_BASE = API.defaults?.baseURL ?? "";
+const TOKEN_KEY = localStorage.getItem("token");
 const FILE_BASE = API_BASE.replace(/\/api\/?$/, "");
 
 type RawExpense = Record<string, any>;

@@ -1,11 +1,8 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import api from "@/api/axios";
 
-const API_BASE = "https://9nutsapi.nearbydoctors.in/public/api/";
-
-/**
- * Shapes
- */
+const API_BASE =  api?.defaults?.baseURL || "";;
 export interface NormalizedSettings {
   site_name: string;
   email: string;
@@ -33,11 +30,7 @@ interface FetchRejected {
   raw?: any;
 }
 
-/**
- * Async thunk - fetch settings from server and normalize them.
- * Return type = NormalizedSettings
- * Rejection value = FetchRejected
- */
+
 export const fetchSiteSettings = createAsyncThunk<
   NormalizedSettings,
   void,
@@ -46,7 +39,7 @@ export const fetchSiteSettings = createAsyncThunk<
   try {
     const token = localStorage.getItem("token") || "";
 
-    const res = await fetch(`${API_BASE}settings`, {
+    const res = await fetch(`${API_BASE}/settings`, {
       method: "GET",
       headers: {
         Accept: "application/json",

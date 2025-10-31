@@ -125,6 +125,7 @@
 // };
 
 // export default Dashboard;
+// src/components/Dashboard.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { MetricCard } from "@/components/MetricCard";
@@ -139,7 +140,9 @@ import {
 import api from "../api/axios";
 
 function fmtNumber(n) {
-  return Number.isFinite(n) ? n.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "0";
+  return Number.isFinite(n)
+    ? n.toLocaleString("en-IN", { maximumFractionDigits: 0 })
+    : "0";
 }
 function fmtCurrency(n) {
   return Number.isFinite(n)
@@ -148,7 +151,6 @@ function fmtCurrency(n) {
 }
 
 const Dashboard = () => {
-  console.log("API",api)
   // default range = last 30 days
   const today = new Date();
   const defaultTo = new Date(today);
@@ -173,36 +175,42 @@ const Dashboard = () => {
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
   // fetch dashboard KPIs from backend
-  const getToken = () => localStorage.getItem("token") || "";
+  const getToken = () => {
+    try {
+      return localStorage.getItem("token") || "";
+    } catch {
+      return "";
+    }
+  };
 
   useEffect(() => {
     const fetchDashboard = async () => {
       const token = getToken();
       if (!token) {
-        // don't toast here loudly every time; simply bail silently
+        // silently return if no token
         return;
       }
 
       setDashboardLoading(true);
       try {
-        const resp = await fetch(`https://9nutsapi.nearbydoctors.in/public/api/dashboard/summary`, {
-          method: "GET",
+        const resp = await api.get(`/dashboard/summary`, {
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
 
-        const json = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          const msg = json?.message || `Failed to load dashboard (${resp.status})`;
-          toast.error(msg);
-          throw new Error(msg);
-        }
-        setDashboardData(json ?? null);
+        // Axios returns parsed JSON in resp.data
+        const json = resp.data ?? null;
+        setDashboardData(json);
       } catch (err) {
+        // err may be an AxiosError — try to extract backend message if present
         console.error("Dashboard fetch error:", err);
-        toast.error(err?.message || "Unable to load dashboard data");
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Unable to load dashboard data";
+        toast.error(msg);
         setDashboardData(null);
       } finally {
         setDashboardLoading(false);
@@ -210,6 +218,7 @@ const Dashboard = () => {
     };
 
     fetchDashboard();
+    // Intentionally empty deps: runs once on mount
   }, []);
 
   // compute combined & filtered orders for charts (inclusive date range)
@@ -232,23 +241,38 @@ const Dashboard = () => {
   }, [combinedOrders, from, to]);
 
   // Metrics derived from filteredOrders (kept as before)
-  const franchiseCount = useMemo(() => new Set((filteredOrders || []).map((o) => o.franchiseId)).size, [filteredOrders]);
-  const revenue = useMemo(() => (filteredOrders || []).reduce((s, o) => s + (Number(o.amount) || 0), 0), [filteredOrders]);
+  const franchiseCount = useMemo(
+    () => new Set((filteredOrders || []).map((o) => o.franchiseId)).size,
+    [filteredOrders]
+  );
+  const revenue = useMemo(
+    () => (filteredOrders || []).reduce((s, o) => s + (Number(o.amount) || 0), 0),
+    [filteredOrders]
+  );
   const posOrders = useMemo(() => (filteredOrders || []).length, [filteredOrders]);
-  const productsCount = useMemo(() => (filteredOrders || []).reduce((s, o) => s + (Number(o.items) || 0), 0), [filteredOrders]);
+  const productsCount = useMemo(
+    () => (filteredOrders || []).reduce((s, o) => s + (Number(o.items) || 0), 0),
+    [filteredOrders]
+  );
 
   // Prefer server-provided card counts if available, otherwise fall back to redux-derived values
   const serverCards = dashboardData?.cards ?? null;
-  const onlineCount = serverCards?.online_orders != null ? Number(serverCards.online_orders) : reduxOnlineCount;
-  const offlineCount = serverCards?.offline_orders != null ? Number(serverCards.offline_orders) : reduxOfflineCount;
+  const onlineCount =
+    serverCards?.online_orders != null ? Number(serverCards.online_orders) : reduxOnlineCount;
+  const offlineCount =
+    serverCards?.offline_orders != null ? Number(serverCards.offline_orders) : reduxOfflineCount;
   // If server provided a single total, you could use that for total display; we'll compute totalPaymentsCount as sum (server fallback)
-  const totalPaymentsCount = (Number(onlineCount || 0) + Number(offlineCount || 0));
+  const totalPaymentsCount = Number(onlineCount || 0) + Number(offlineCount || 0);
   const totalPaymentsRevenue = Number((reduxOnlineRevenue || 0) + (reduxOfflineRevenue || 0));
 
   const periodLabel = useMemo(() => {
     const f = new Date(from);
     const t = new Date(to);
-    if (f.getFullYear() === t.getFullYear() && f.getMonth() === t.getMonth() && f.getDate() === t.getDate()) {
+    if (
+      f.getFullYear() === t.getFullYear() &&
+      f.getMonth() === t.getMonth() &&
+      f.getDate() === t.getDate()
+    ) {
       return f.toLocaleDateString("en-IN");
     }
     return `${f.toLocaleDateString("en-IN")} — ${t.toLocaleDateString("en-IN")}`;
@@ -268,7 +292,7 @@ const Dashboard = () => {
   const Yearly = YearlyChart;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-3">
       <Toaster position="top-right" reverseOrder={false} />
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">Welcome!</h1>
